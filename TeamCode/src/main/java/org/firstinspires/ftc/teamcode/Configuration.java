@@ -37,8 +37,8 @@ public class Configuration {
     }
 
     public static double ARTIFACT_TRANSFER_TIME = 0.7;
-    public static double SHOOTER_HEIGHT_TO_GOAL = 0.8;
-    public static double SHOOTER_TIME = 0.75;
+    public static double SHOOTER_HEIGHT_TO_GOAL = 1.1;
+    public static double SHOOTER_TIME = 0.6;
 
 
     public static int RED_LIMELIGHT_PIPELINE = 0;

@@ -44,6 +44,7 @@ public class Turret implements Subsystem {
         turretServo1.getServo().getController().pwmEnable();
         turretServo2.getServo().getController().pwmEnable();
 
+        mode = Mode.odometry;
         setAngle(0);
     }
 

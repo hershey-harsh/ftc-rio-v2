@@ -28,6 +28,7 @@ public class ShooterDebug extends NextFTCOpMode {
     private DriverControlledCommand driverControlled;
 
     private static final double HOOD_STEP = 1.0; // degrees per dpad press
+    private double userBaselineHoodAngle = 56.5; // tracks dpad-controlled baseline separately
 
     // Logged data entries (appended on each A press)
     private final StringBuilder logEntries = new StringBuilder();
@@ -72,9 +73,8 @@ public class ShooterDebug extends NextFTCOpMode {
         );
         driverControlled.schedule();
 
-        // Enable shooter motors
-        Shooter.INSTANCE.flywheelMotor1.getMotor().setMotorEnable();
-        Shooter.INSTANCE.flywheelMotor2.getMotor().setMotorEnable();
+        // Start shooter (sets started=true so periodic() runs, keeps manual mode so hood isn't auto-overridden)
+        Shooter.INSTANCE.start().schedule();
 
         // Intake runs by default on start
         Transfer.INSTANCE.intake().schedule();
@@ -85,15 +85,15 @@ public class ShooterDebug extends NextFTCOpMode {
         // D-Pad Up — increase hood angle manually
         button(() -> gamepad1.dpad_up)
                 .whenBecomesTrue(() -> {
-                    double newAngle = Math.min(Shooter.INSTANCE.HOOD_ANGLE + HOOD_STEP, Shooter.INSTANCE.MAX_HOOD_ANGLE);
-                    Shooter.INSTANCE.setHoodAngle(newAngle);
+                    userBaselineHoodAngle = Math.min(userBaselineHoodAngle + HOOD_STEP, Shooter.INSTANCE.MAX_HOOD_ANGLE);
+                    Shooter.INSTANCE.setHoodAngle(userBaselineHoodAngle);
                 });
 
         // D-Pad Down — decrease hood angle manually
         button(() -> gamepad1.dpad_down)
                 .whenBecomesTrue(() -> {
-                    double newAngle = Math.max(Shooter.INSTANCE.HOOD_ANGLE - HOOD_STEP, Shooter.INSTANCE.MIN_HOOD_ANGLE);
-                    Shooter.INSTANCE.setHoodAngle(newAngle);
+                    userBaselineHoodAngle = Math.max(userBaselineHoodAngle - HOOD_STEP, Shooter.INSTANCE.MIN_HOOD_ANGLE);
+                    Shooter.INSTANCE.setHoodAngle(userBaselineHoodAngle);
                 });
 
         // Left Bumper — close gate
@@ -117,6 +117,12 @@ public class ShooterDebug extends NextFTCOpMode {
                             Shooter.INSTANCE.HOOD_POSITION
                     ));
                 });
+
+        // B — toggle hood compensation
+        button(() -> gamepad1.b)
+                .toggleOnBecomesTrue()
+                .whenBecomesTrue(() -> Shooter.INSTANCE.hoodCompensationEnabled = true)
+                .whenBecomesFalse(() -> Shooter.INSTANCE.hoodCompensationEnabled = false);
     }
 
     @Override
@@ -127,9 +133,27 @@ public class ShooterDebug extends NextFTCOpMode {
 
         // Drive RPM from math model every loop (hood stays wherever user set it)
         double distMeters = Shooter.INSTANCE.GOAL_DISTANCE * 0.0254;
-        double hoodRad = Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE);
+        double hoodRad = Math.toRadians(userBaselineHoodAngle);
         Shooter.INSTANCE.updateKinematics(distMeters, hoodRad);
-        Shooter.INSTANCE.targetRPM = Shooter.INSTANCE.getKinematicRPMGoal() * 2.5;
+        Shooter.INSTANCE.targetRPM = Shooter.INSTANCE.getKinematicRPMGoal() * 2.15;
+
+        // Hood compensation: adjust hood based on actual vs target RPM
+        double baselineHood = userBaselineHoodAngle;
+        double compensatedHood = baselineHood;
+        if (Shooter.INSTANCE.hoodCompensationEnabled) {
+            Shooter.INSTANCE.setPlannedShot(
+                    Shooter.INSTANCE.GOAL_DISTANCE,
+                    Shooter.INSTANCE.targetRPM,
+                    baselineHood
+            );
+            compensatedHood = Shooter.INSTANCE.physicsCompensatedHoodDeg(
+                    Shooter.INSTANCE.GOAL_DISTANCE,
+                    Shooter.INSTANCE.targetRPM,
+                    Shooter.INSTANCE.readRPM,
+                    baselineHood
+            );
+            Shooter.INSTANCE.setHoodAngle(compensatedHood);
+        }
 
         // --- Telemetry ---
         telemetry.addData("Loop Time (ms)", LOOP_TIME);
@@ -158,6 +182,13 @@ public class ShooterDebug extends NextFTCOpMode {
         telemetry.addData("Read RPM", Shooter.INSTANCE.readRPM);
 
         telemetry.addLine();
+        telemetry.addData("=== Hood Compensation ===", "");
+        telemetry.addData("Enabled", Shooter.INSTANCE.hoodCompensationEnabled);
+        telemetry.addData("Baseline Hood", baselineHood);
+        telemetry.addData("Compensated Hood", compensatedHood);
+        telemetry.addData("Delta (deg)", Shooter.INSTANCE.lastDeltaDeg);
+
+        telemetry.addLine();
         telemetry.addData("=== Log (press A to record) ===", "");
         telemetry.addData("Entries", logCount);
         telemetry.addLine(logEntries.toString());
@@ -167,6 +198,7 @@ public class ShooterDebug extends NextFTCOpMode {
         telemetry.addLine("DPad Up/Down: Hood +/- 1°");
         telemetry.addLine("LB: Close gate  RB: Open gate");
         telemetry.addLine("A: Log distance + hood");
+        telemetry.addLine("B: Toggle hood compensation");
 
         BindingManager.update();
         telemetry.update();

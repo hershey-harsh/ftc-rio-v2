@@ -29,7 +29,7 @@ public class Shooter implements Subsystem {
     public static final double TICKS_PER_REV = 28.0;
 
 //    public static double kP = 0.001, kI = 0, kD = 0, kF = 0.00015;
-    public static PIDCoefficients coefficients = new PIDCoefficients(0.001, 0.0, 0);
+    public static PIDCoefficients coefficients = new PIDCoefficients(0.0125, 0.0, 0.0001);
     public static BasicFeedforwardParameters ffcoefficients = new BasicFeedforwardParameters(0.00015, 0.0, 0.0);
 //    private PIDController velController;
 //    private VoltageSensor voltageSensor;
@@ -54,9 +54,125 @@ public class Shooter implements Subsystem {
     public double MIN_HOOD_ANGLE = 43.0;
     public double MAX_HOOD_ANGLE = 70.0;
 
+    // ---- Hood Compensation ----
+    // Converts RPM to ball exit velocity in m/s: v = RPM * 2π * wheel_radius / 60
+    // wheel radius = 0.036m, so EXIT_VEL_M_PER_RPM = 2π * 0.036 / 60
+    public static double EXIT_VEL_M_PER_RPM = (2 * Math.PI * 0.036) / 60.0;
+    public static double POSE_UNITS_TO_METERS = 0.0254; // inches to meters
+    public static double GOAL_HEIGHT_M = Configuration.SHOOTER_HEIGHT_TO_GOAL; // height difference
+    public static double LAUNCHER_HEIGHT_ACTUAL_M = 0.0; // launcher is reference point
+    public static double PHYS_COMP_MAX_DELTA_DEG = 6.0; // max hood correction degrees
+    public static double PHYS_COMP_MIN_FRAC = 0.55; // give up if actual < 55% of target
+
+    public boolean hoodCompensationEnabled = false;
+    public double plannedDistPoseUnits = 0;
+    public double plannedTargetRpm = 0;
+    public double plannedHoodBaselineDeg = 56.5;
+    public double lastCompensatedHoodDeg = 0;
+    public double lastDeltaDeg = 0;
+
+    public void setPlannedShot(double distPoseUnits, double targetRpm, double hoodBaselineDeg) {
+        plannedDistPoseUnits = distPoseUnits;
+        plannedTargetRpm = targetRpm;
+        plannedHoodBaselineDeg = hoodBaselineDeg;
+    }
+
+    /** Projectile theta pair — two solutions (low arc and high arc) */
+    private static class ThetaPair {
+        final double thLo, thHi;
+        final boolean valid;
+        ThetaPair(double lo, double hi, boolean valid) { this.thLo = lo; this.thHi = hi; this.valid = valid; }
+    }
+
+    /**
+     * Solve for launch angles (from horizontal) that hit target at horizontal distance x,
+     * height difference dh, with launch speed v.
+     */
+    private ThetaPair solveThetaPair(double x, double v, double dh) {
+        if (x <= 0 || v <= 0) return new ThetaPair(0, 0, false);
+        double g = 9.8;
+        double v2 = v * v;
+        double v4 = v2 * v2;
+        double x2 = x * x;
+        double disc = v4 - g * (g * x2 + 2 * dh * v2);
+        if (disc < 0) return new ThetaPair(0, 0, false);
+        double sqrtDisc = Math.sqrt(disc);
+        double th1 = Math.atan((v2 - sqrtDisc) / (g * x));
+        double th2 = Math.atan((v2 + sqrtDisc) / (g * x));
+        double lo = Math.min(th1, th2);
+        double hi = Math.max(th1, th2);
+        return new ThetaPair(lo, hi, true);
+    }
+
+    /** Convert projectile launch angle (rad from horizontal) to hood angle (deg from vertical) */
+    private double thetaToHoodDeg(double thetaRadFromHorizontal) {
+        return 90.0 - Math.toDegrees(thetaRadFromHorizontal);
+    }
+
+    private double clipAmount(double hoodDeg) {
+        if (hoodDeg < MIN_HOOD_ANGLE) return MIN_HOOD_ANGLE - hoodDeg;
+        if (hoodDeg > MAX_HOOD_ANGLE) return hoodDeg - MAX_HOOD_ANGLE;
+        return 0;
+    }
+
+    /**
+     * Given the planned shot and the actual flywheel RPM, compute a corrected hood angle.
+     */
+    public double physicsCompensatedHoodDeg(double distPoseUnits, double tgt, double act, double hoodBaselineDeg) {
+        double x = distPoseUnits * POSE_UNITS_TO_METERS;
+        double dh = GOAL_HEIGHT_M - LAUNCHER_HEIGHT_ACTUAL_M;
+
+        double vTarget = tgt * EXIT_VEL_M_PER_RPM;
+        double vActual = act * EXIT_VEL_M_PER_RPM;
+
+        // If actual RPM is way too low, don't try to compensate
+        if (act < PHYS_COMP_MIN_FRAC * tgt) {
+            return Math.max(MIN_HOOD_ANGLE, Math.min(hoodBaselineDeg, MAX_HOOD_ANGLE));
+        }
+
+        ThetaPair pairT = solveThetaPair(x, vTarget, dh);
+        ThetaPair pairA = solveThetaPair(x, vActual, dh);
+
+        if (!pairT.valid || !pairA.valid) {
+            return Math.max(MIN_HOOD_ANGLE, Math.min(hoodBaselineDeg, MAX_HOOD_ANGLE));
+        }
+
+        double hoodTargetLo = thetaToHoodDeg(pairT.thLo);
+        double hoodActualLo = thetaToHoodDeg(pairA.thLo);
+        double hoodTargetHi = thetaToHoodDeg(pairT.thHi);
+        double hoodActualHi = thetaToHoodDeg(pairA.thHi);
+
+        // Delta = how much to shift hood from baseline
+        double deltaLo = Math.max(-PHYS_COMP_MAX_DELTA_DEG, Math.min(hoodActualLo - hoodTargetLo, PHYS_COMP_MAX_DELTA_DEG));
+        double hoodCmdLo = hoodBaselineDeg + deltaLo;
+
+        double deltaHi = Math.max(-PHYS_COMP_MAX_DELTA_DEG, Math.min(hoodActualHi - hoodTargetHi, PHYS_COMP_MAX_DELTA_DEG));
+        double hoodCmdHi = hoodBaselineDeg + deltaHi;
+
+        boolean clipLo = hoodCmdLo < MIN_HOOD_ANGLE || hoodCmdLo > MAX_HOOD_ANGLE;
+        boolean clipHi = hoodCmdHi < MIN_HOOD_ANGLE || hoodCmdHi > MAX_HOOD_ANGLE;
+
+        double hoodCmd;
+        if (clipLo && !clipHi) {
+            hoodCmd = hoodCmdHi;
+        } else if (clipHi && !clipLo) {
+            hoodCmd = hoodCmdLo;
+        } else if (!clipLo && !clipHi) {
+            double aLo = Math.abs(hoodTargetLo - hoodBaselineDeg);
+            double aHi = Math.abs(hoodTargetHi - hoodBaselineDeg);
+            hoodCmd = (aHi <= aLo) ? hoodCmdHi : hoodCmdLo;
+        } else {
+            hoodCmd = (clipAmount(hoodCmdLo) <= clipAmount(hoodCmdHi)) ? hoodCmdLo : hoodCmdHi;
+        }
+
+        lastDeltaDeg = hoodCmd - hoodBaselineDeg;
+        return Math.max(MIN_HOOD_ANGLE, Math.min(hoodCmd, MAX_HOOD_ANGLE));
+    }
+
     public Mode mode = Mode.odometry;
 
     public double GOAL_DISTANCE = 0;
+    private boolean started = false;
 
     public enum Mode {
         manual,
@@ -84,12 +200,18 @@ public class Shooter implements Subsystem {
                 .basicFF(ffcoefficients)
                 .build();
 
+        started = false;
+        mode = Mode.manual;
+        targetRPM = 0;
+
 //        velController = new PIDController(kP, kI, kD);
 //        voltageSensor = ActiveOpMode.hardwareMap().voltageSensor.iterator().next();
     }
 
     @Override
     public void periodic() {
+        if (!started) return;
+
         Pose pose = Configuration.CURRENT_POSE;
         
         if (Configuration.ALLIANCE == Configuration.Alliance.RED) {
@@ -118,6 +240,12 @@ public class Shooter implements Subsystem {
         double targetVelocity = rpmToVelocity(targetRPM);
         controlSystem.setGoal(new KineticState(0.0, targetVelocity));
         flywheelMotor.setPower(controlSystem.calculate(flywheelMotor.getState()));
+
+        // ---- Hood Compensation ----
+        if (hoodCompensationEnabled && mode == Mode.odometry) {
+            double compensatedHood = physicsCompensatedHoodDeg(plannedDistPoseUnits, plannedTargetRpm, readRPM, plannedHoodBaselineDeg);
+            setHoodAngle(compensatedHood);
+        }
     }
 
     public void setHoodAngle(double degrees) {
@@ -231,6 +359,7 @@ public class Shooter implements Subsystem {
 
     public Command on() {
         return new InstantCommand(() -> {
+            started = true;
             flywheelMotor1.getMotor().setMotorEnable();
             flywheelMotor2.getMotor().setMotorEnable();
             mode = Mode.odometry;
@@ -246,6 +375,7 @@ public class Shooter implements Subsystem {
 
     public Command start() {
         return new InstantCommand(() -> {
+            started = true;
             mode = Mode.manual;
             hoodServo1.getServo().getController().pwmEnable();
             hoodServo2.getServo().getController().pwmEnable();
@@ -295,4 +425,6 @@ public class Shooter implements Subsystem {
         });
     }
 }
+
+
 

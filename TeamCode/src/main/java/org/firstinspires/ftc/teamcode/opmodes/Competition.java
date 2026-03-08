@@ -63,7 +63,7 @@ public class Competition extends NextFTCOpMode {
         backLeftMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         backRightMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-//        PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
+        PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
         PedroComponent.follower().setStartingPose(new Pose(72, 72, Math.toRadians(270)));
     }
 
@@ -71,7 +71,7 @@ public class Competition extends NextFTCOpMode {
     public void onStartButtonPressed() {
         driverControlled = new PedroDriverControlled(
                 Gamepads.gamepad1().leftStickY().negate(),
-                Gamepads.gamepad1().leftStickX(),
+                Gamepads.gamepad1().leftStickX().negate(),
                 Gamepads.gamepad1().rightStickX().negate(),
                 !Configuration.FIELD_CENTRIC
         );
@@ -81,6 +81,7 @@ public class Competition extends NextFTCOpMode {
         // Turret starts tracking goal immediately
         Turret.INSTANCE.mode = Turret.Mode.odometry;
         Turret.INSTANCE.start().schedule();
+        Shooter.INSTANCE.on().schedule();
 
 //        button(() -> gamepad1.a && !gamepad2Override)
 //                .toggleOnBecomesFalse()
@@ -242,7 +243,7 @@ public class Competition extends NextFTCOpMode {
             double vt = Math.sqrt((vn * vn) + (vxr * vxr));
 
             Shooter.INSTANCE.setHoodAngle(Shooter.INSTANCE.HOOD_ANGLE);
-            Configuration.TURRET_OFFSET = 0;
+            Configuration.TURRET_OFFSET = 2;
             Shooter.INSTANCE.targetRPM = Shooter.INSTANCE.vMSToRPM(vt) * 2.75; //2.75 weight if stationary
 //                Shooter.INSTANCE.targetRPM = Shooter.INSTANCE.getKinematicRPMGoal() * 2.75;
         }
