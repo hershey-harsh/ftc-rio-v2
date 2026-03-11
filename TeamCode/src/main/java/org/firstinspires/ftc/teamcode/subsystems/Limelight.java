@@ -1,9 +1,9 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.ftc.InvertedFTCCoordinates;
 import com.pedropathing.ftc.PoseConverter;
+import com.pedropathing.geometry.PedroCoordinates;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 
@@ -20,7 +20,6 @@ import org.firstinspires.ftc.teamcode.Configuration;
 
 import static org.firstinspires.ftc.teamcode.subsystems.Light.AZURE;
 import static org.firstinspires.ftc.teamcode.subsystems.Light.BLUE;
-import static org.firstinspires.ftc.teamcode.subsystems.Light.YELLOW;
 
 public class Limelight implements Subsystem {
     public static final Limelight INSTANCE = new Limelight();
@@ -29,6 +28,30 @@ public class Limelight implements Subsystem {
     public LLResult limelightResult;
     private int pipeline;
     public boolean autoUpdateEnabled = true;
+
+    // Limelight position relative to robot center when turret angle = 0.
+    // Positive X = forward, Positive Y = left/right depending on your field coord setup.
+    // Tune these to match your robot.
+    public static double LIMELIGHT_OFFSET_X_METERS = 0.0;
+    public static double LIMELIGHT_OFFSET_Y_METERS = 0.0;
+
+    // Extra fixed angular offset if camera is not perfectly aligned with turret zero
+    public static double LIMELIGHT_TURRET_YAW_OFFSET_DEG = 0.0;
+
+    // --- Debug diagnostics ---
+    public int pollCount = 0;
+    public int validResultCount = 0;
+    public int botposeNullCount = 0;
+    public int measurementSentCount = 0;
+    public long lastMeasurementTimestamp = 0;
+
+    public Pose lastPedroPose = null;
+    public Pose3D lastRawBotpose = null;
+
+    // corrected robot-frame values before conversion
+    public double lastCorrectedX = 0.0;
+    public double lastCorrectedY = 0.0;
+    public double lastCorrectedHeadingDeg = 0.0;
 
     private Limelight() {}
 
@@ -56,29 +79,73 @@ public class Limelight implements Subsystem {
 
     private void updateLocalization() {
         limelightResult = limelight.getLatestResult();
+        pollCount++;
 
         if (limelightResult != null && limelightResult.isValid()) {
+            validResultCount++;
 
             Pose3D botpose3D = limelightResult.getBotpose();
             if (botpose3D != null) {
-                Pose2D botpose2D = new Pose2D(
+                lastRawBotpose = botpose3D;
+
+                // Raw Limelight pose (this is effectively the camera/turret pose)
+                double camX = botpose3D.getPosition().x;
+                double camY = botpose3D.getPosition().y;
+                double camYawDeg = botpose3D.getOrientation().getYaw();
+
+                // Turret angle relative to robot
+                double turretDeg = Turret.INSTANCE.TURRET_ANGLE + LIMELIGHT_TURRET_YAW_OFFSET_DEG;
+                double turretRad = Math.toRadians(turretDeg);
+
+                // Rotate the camera offset by turret angle
+                double rotatedOffsetX =
+                        LIMELIGHT_OFFSET_X_METERS * Math.cos(turretRad)
+                                - LIMELIGHT_OFFSET_Y_METERS * Math.sin(turretRad);
+
+                double rotatedOffsetY =
+                        LIMELIGHT_OFFSET_X_METERS * Math.sin(turretRad)
+                                + LIMELIGHT_OFFSET_Y_METERS * Math.cos(turretRad);
+
+                // Convert camera pose -> robot pose
+                double robotX = camX - rotatedOffsetX;
+                double robotY = camY - rotatedOffsetY;
+                double robotYawDeg = normalizeDegrees(camYawDeg - turretDeg);
+
+                lastCorrectedX = robotX;
+                lastCorrectedY = robotY;
+                lastCorrectedHeadingDeg = robotYawDeg;
+
+                Pose2D correctedBotpose2D = new Pose2D(
                         DistanceUnit.METER,
-                        botpose3D.getPosition().x,
-                        botpose3D.getPosition().y,
+                        robotX,
+                        robotY,
                         AngleUnit.DEGREES,
-                        botpose3D.getOrientation().getYaw()
+                        robotYawDeg
                 );
 
-                Pose ftcPose = PoseConverter.pose2DToPose(botpose2D, InvertedFTCCoordinates.INSTANCE);
+                Pose ftcPose = PoseConverter.pose2DToPose(correctedBotpose2D, InvertedFTCCoordinates.INSTANCE);
                 Pose pedroPose = ftcPose.getAsCoordinateSystem(PedroCoordinates.INSTANCE);
+                lastPedroPose = pedroPose;
 
-                Configuration.fusionLocalizer.addMeasurement(pedroPose, System.nanoTime() - limelightResult.getStaleness());
+                long timestamp = System.nanoTime() - limelightResult.getStaleness();
+                lastMeasurementTimestamp = timestamp;
+                measurementSentCount++;
+
+                Configuration.fusionLocalizer.addMeasurement(pedroPose, timestamp);
 
                 if (!autoUpdateEnabled) {
                     Light.INSTANCE.setColor(BLUE, Light.Target.ROBOT).schedule();
                 }
+            } else {
+                botposeNullCount++;
             }
         }
+    }
+
+    private double normalizeDegrees(double angle) {
+        while (angle > 180) angle -= 360;
+        while (angle <= -180) angle += 360;
+        return angle;
     }
 
     public Command start() {

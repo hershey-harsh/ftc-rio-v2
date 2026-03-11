@@ -122,7 +122,10 @@ public class ShooterDebug extends NextFTCOpMode {
         button(() -> gamepad1.b)
                 .toggleOnBecomesTrue()
                 .whenBecomesTrue(() -> Shooter.INSTANCE.hoodCompensationEnabled = true)
-                .whenBecomesFalse(() -> Shooter.INSTANCE.hoodCompensationEnabled = false);
+                .whenBecomesFalse(() -> {
+                    Shooter.INSTANCE.hoodCompensationEnabled = false;
+                    Shooter.INSTANCE.setHoodAngle(userBaselineHoodAngle);
+                });
     }
 
     @Override
@@ -135,24 +138,29 @@ public class ShooterDebug extends NextFTCOpMode {
         double distMeters = Shooter.INSTANCE.GOAL_DISTANCE * 0.0254;
         double hoodRad = Math.toRadians(userBaselineHoodAngle);
         Shooter.INSTANCE.updateKinematics(distMeters, hoodRad);
-        Shooter.INSTANCE.targetRPM = Shooter.INSTANCE.getKinematicRPMGoal() * 2.15;
+        Shooter.INSTANCE.targetRPM = Shooter.INSTANCE.getKinematicRPMGoal() * 2.5;
 
         // Hood compensation: adjust hood based on actual vs target RPM
         double baselineHood = userBaselineHoodAngle;
         double compensatedHood = baselineHood;
         if (Shooter.INSTANCE.hoodCompensationEnabled) {
-            Shooter.INSTANCE.setPlannedShot(
-                    Shooter.INSTANCE.GOAL_DISTANCE,
-                    Shooter.INSTANCE.targetRPM,
-                    baselineHood
-            );
-            compensatedHood = Shooter.INSTANCE.physicsCompensatedHoodDeg(
-                    Shooter.INSTANCE.GOAL_DISTANCE,
-                    Shooter.INSTANCE.targetRPM,
-                    Shooter.INSTANCE.readRPM,
-                    baselineHood
-            );
-            Shooter.INSTANCE.setHoodAngle(compensatedHood);
+            double rpmError = Math.abs(Shooter.INSTANCE.readRPM - Shooter.INSTANCE.targetRPM);
+            if (rpmError > 75) {
+                Shooter.INSTANCE.setPlannedShot(
+                        Shooter.INSTANCE.GOAL_DISTANCE,
+                        Shooter.INSTANCE.targetRPM,
+                        baselineHood
+                );
+                compensatedHood = Shooter.INSTANCE.physicsCompensatedHoodDeg(
+                        Shooter.INSTANCE.GOAL_DISTANCE,
+                        Shooter.INSTANCE.targetRPM,
+                        Shooter.INSTANCE.readRPM,
+                        baselineHood
+                );
+                Shooter.INSTANCE.setHoodAngle(compensatedHood);
+            } else {
+                Shooter.INSTANCE.setHoodAngle(baselineHood);
+            }
         }
 
         // --- Telemetry ---

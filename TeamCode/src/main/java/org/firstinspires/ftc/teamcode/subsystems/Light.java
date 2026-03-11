@@ -55,6 +55,9 @@ public class Light implements Subsystem {
         turretBlinkOn = true;
         turretBlinkCount = 0;
         turretBlinkAmount = -1;
+
+        robotLight.getServo().setPosition(GREEN);
+        turretLight.getServo().setPosition(GREEN);
     }
 
     @Override

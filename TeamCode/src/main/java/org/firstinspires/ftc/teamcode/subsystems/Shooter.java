@@ -29,8 +29,8 @@ public class Shooter implements Subsystem {
     public static final double TICKS_PER_REV = 28.0;
 
 //    public static double kP = 0.001, kI = 0, kD = 0, kF = 0.00015;
-    public static PIDCoefficients coefficients = new PIDCoefficients(0.0125, 0.0, 0.0001);
-    public static BasicFeedforwardParameters ffcoefficients = new BasicFeedforwardParameters(0.00015, 0.0, 0.0);
+    public static PIDCoefficients coefficients = new PIDCoefficients(0.01, 0.0, 0.0);
+    public static BasicFeedforwardParameters ffcoefficients = new BasicFeedforwardParameters(0.000455, 0.0, 0.0);
 //    private PIDController velController;
 //    private VoltageSensor voltageSensor;
 

@@ -26,8 +26,6 @@ android {
         main {
             java {
                 // Exclude files that aren't ready for deployment
-                exclude 'org/firstinspires/ftc/teamcode/subsystems/Light.java'
-                exclude 'org/firstinspires/ftc/teamcode/subsystems/Limelight.java'
             }
         }
     }

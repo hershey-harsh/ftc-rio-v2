@@ -55,34 +55,34 @@ public class Constants {
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)
-                .setDrivetrain(new Mecanum(hardwareMap, driveConstants))
+                .mecanumDrivetrain(driveConstants, followerConstants.predictiveBrakingCoefficients)
                 .pinpointLocalizer(localizerConstants)
                 .build();
     }
-    public static Follower createFusionFollower(HardwareMap hardwareMap) {
-        Configuration.fusionLocalizer = new FusionLocalizer(
-                new PinpointLocalizer(hardwareMap, localizerConstants),
-                // Accuracy of initial position
-                // x (inches), y (inches), angle (radians)
-                new double[]{0.5, 0.5, 0.05},   // P: initial covariance
-                // Error accumulation of localizer over time
-                // x (in^2/s^2), y (in^2/s^2), angle (rad^2/s^s)
-                new double[]{1.0, 1.0, 0.1},    // Q: process variance
-                // Accuracy of measurement to be fused (usually vision)
-                // x (inches), y (inches), angle (radians)
-                new double[]{4.0, 4.0, 0.04},   // R: measurement variance
-                // Path history points to retain. You must retain enough
-                // history to account for the delay of vision detections.
-                // The # of points is dependent on the speed of your control
-                // loop and the latency of your computer vision system.
-                // For a 50Hz loop, this would give you 2s of history
-                100                              // bufferSize
-        );
-
-        return new FollowerBuilder(followerConstants, hardwareMap)
-                .pathConstraints(pathConstraints)
-                .setLocalizer(Configuration.fusionLocalizer)
-                .setDrivetrain(new Mecanum(hardwareMap, driveConstants))
-                .build();
-    }
+//    public static Follower createFusionFollower(HardwareMap hardwareMap) {
+//        Configuration.fusionLocalizer = new FusionLocalizer(
+//                new PinpointLocalizer(hardwareMap, localizerConstants),
+//                // Accuracy of initial position
+//                // x (inches), y (inches), angle (radians)
+//                new double[]{0.5, 0.5, 0.05},   // P: initial covariance
+//                // Error accumulation of localizer over time
+//                // x (in^2/s^2), y (in^2/s^2), angle (rad^2/s^s)
+//                new double[]{1.0, 1.0, 0.1},    // Q: process variance
+//                // Accuracy of measurement to be fused (usually vision)
+//                // x (inches), y (inches), angle (radians)
+//                new double[]{4.0, 4.0, 0.04},   // R: measurement variance
+//                // Path history points to retain. You must retain enough
+//                // history to account for the delay of vision detections.
+//                // The # of points is dependent on the speed of your control
+//                // loop and the latency of your computer vision system.
+//                // For a 50Hz loop, this would give you 2s of history
+//                100                              // bufferSize
+//        );
+//
+//        return new FollowerBuilder(followerConstants, hardwareMap)
+//                .pathConstraints(pathConstraints)
+//                .setLocalizer(Configuration.fusionLocalizer)
+//                .mecanumDrivetrain(driveConstants, followerConstants.predictiveBrakingCoefficients)
+//                .build();
+//    }
 }

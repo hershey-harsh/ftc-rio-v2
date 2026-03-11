@@ -28,8 +28,8 @@ public class Transfer implements Subsystem {
     public static double THIRD_GATE_POWER;
     public static double POWER_INCREMENT = 0.1;
     private double CURRENT_POWER = 0;
-    public static double GATE_ONE_OPEN = 0.654, GATE_ONE_CLOSED = 0.730;
-    public static double GATE_TWO_OPEN = 0.402, GATE_TWO_CLOSED = 0.333;
+    public static double GATE_ONE_OPEN = 0.661, GATE_ONE_CLOSED = 0.738;
+    public static double GATE_TWO_OPEN = 0.388, GATE_TWO_CLOSED = 0.315;
 
     public MotorEx transferMotor1;
     public MotorEx transferMotor2;
@@ -51,8 +51,8 @@ public class Transfer implements Subsystem {
 
     @Override
     public void initialize() {
-        transferMotor1 = new MotorEx(ActiveOpMode.hardwareMap().get(DcMotorEx.class, Configuration.TRANSFER_MOTOR_ONE));
-        transferMotor2 = new MotorEx(ActiveOpMode.hardwareMap().get(DcMotorEx.class, Configuration.TRANSFER_MOTOR_TWO)).reversed();
+        transferMotor1 = new MotorEx(ActiveOpMode.hardwareMap().get(DcMotorEx.class, Configuration.TRANSFER_MOTOR_ONE)).reversed();
+        transferMotor2 = new MotorEx(ActiveOpMode.hardwareMap().get(DcMotorEx.class, Configuration.TRANSFER_MOTOR_TWO));
 
         servoGate1 = new ServoEx(ActiveOpMode.hardwareMap().get(Servo.class, Configuration.SERVO_GATE_LEFT));
         servoGate2 = new ServoEx(ActiveOpMode.hardwareMap().get(Servo.class, Configuration.SERVER_GATE_RIGHT));

@@ -18,7 +18,7 @@ public class Configuration {
     public static final String SERVER_GATE_RIGHT = "servo1B";
     public static final String HOOD_SERVO_RIGHT = "servo4B";
     public static final String HOOD_SERVO_LEFT = "servo3B"; //servo%B
-    public static final String ROBOT_LIGHT = "light";
+    public static final String ROBOT_LIGHT = "servo4";
     public static final String TURRET_LIGHT = "servo5";
     public static final String RIGHT_TURRET_MOTOR = "motor0B";
     public static final String LEFT_TURRET_MOTOR = "motor1B";

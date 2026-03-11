@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.pedro;
 
 import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
+import com.pedropathing.control.PredictiveBrakingCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.ftc.FollowerBuilder;
@@ -61,33 +62,33 @@ public class ConstantsV1 {
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)
-                .mecanumDrivetrain(driveConstants)
+                .mecanumDrivetrain(driveConstants, followerConstants.predictiveBrakingCoefficients)
                 .pinpointLocalizer(localizerConstants)
                 .build();
     }
 
-    public static Follower createFusionFollower(HardwareMap hardwareMap) {
-        Configuration.fusionLocalizer = new FusionLocalizer(
-                new PinpointLocalizer(hardwareMap, localizerConstants),
-                // Error accumulation of localizer over time
-                // x (in^2/s^2), y (in^2/s^2), angle (rad^2/s^s)
-                new double[]{0.1, 0.1, 0.05}, // Q: process variance
-                // Accuracy of measurement to be fused (usually vision)
-                // x (inches), y (inches), angle (radians)
-                new double[]{0.5, 0.5, 0.1},// R: measurement variance
-                // Path history points to retain. You must retain enough
-                // history to account for the delay of vision detections.
-                // The # of points is dependent on the speed of your control
-                // loop and the latency of your computer vision system.
-                // For a 50Hz loop, this would give you 2s of history
-                new double[]{0.5, 0.5, 0.1},
-                100 //Buffer Size
-        );
-
-        return new FollowerBuilder(followerConstants, hardwareMap)
-                .pathConstraints(pathConstraints)
-                .setLocalizer(Configuration.fusionLocalizer)
-                .mecanumDrivetrain(driveConstants)
-                .build();
-    }
+//    public static Follower createFusionFollower(HardwareMap hardwareMap) {
+//        Configuration.fusionLocalizer = new FusionLocalizer(
+//                new PinpointLocalizer(hardwareMap, localizerConstants),
+//                // Error accumulation of localizer over time
+//                // x (in^2/s^2), y (in^2/s^2), angle (rad^2/s^s)
+//                new double[]{0.1, 0.1, 0.05}, // Q: process variance
+//                // Accuracy of measurement to be fused (usually vision)
+//                // x (inches), y (inches), angle (radians)
+//                new double[]{0.5, 0.5, 0.1},// R: measurement variance
+//                // Path history points to retain. You must retain enough
+//                // history to account for the delay of vision detections.
+//                // The # of points is dependent on the speed of your control
+//                // loop and the latency of your computer vision system.
+//                // For a 50Hz loop, this would give you 2s of history
+//                new double[]{0.5, 0.5, 0.1},
+//                100 //Buffer Size
+//        );
+//
+//        return new FollowerBuilder(followerConstants, hardwareMap)
+//                .pathConstraints(pathConstraints)
+//                .setLocalizer(Configuration.fusionLocalizer)
+//                .mecanumDrivetrain(driveConstants, new PredictiveBrakingCoefficients(0.3, 0.086595400785, 0.0025996451))
+//                .build();
+//    }
 }
