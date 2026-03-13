@@ -41,8 +41,8 @@ public class Constants {
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
     public static MecanumConstants driveConstants = new MecanumConstants()
-            .xVelocity(74.43925175704355)
-            .yVelocity(57.82905542568898)
+            .xVelocity(79.1942)
+            .yVelocity(56.8602)
             .maxPower(1)
             .rightFrontMotorName(Configuration.RIGHT_FRONT_MOTOR)
             .rightRearMotorName(Configuration.RIGHT_REAR_MOTOR)

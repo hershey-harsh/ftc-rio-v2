@@ -177,3 +177,31 @@ public class Rushed extends NextFTCOpMode {
         BindingManager.reset();
     }
 }
+
+
+//        if (Shooter.INSTANCE.mode == Shooter.Mode.odometry) {
+//X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
+//Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
+//
+//TRUE_TARGET_DEGREE = Turret.INSTANCE.TRUE_TARGET_DEGREE;
+//FLYWHEEL_VALUES = Shooter.getShooterValues(Shooter.INSTANCE.GOAL_DISTANCE);
+//
+//Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.artifactVelocityMStoRPM(FLYWHEEL_VALUES.ARTIFACT_VELOCITY);
+//Shooter.INSTANCE.HOOD_ANGLE = FLYWHEEL_VALUES.HOOD_ANGLE;
+//
+////            double weight = Shooter.INSTANCE.getWeight();
+////            Configuration.setAimPointOffset(-X_VELOCITY * weight, -Y_VELOCITY * weight);
+//
+//double vyr = ((Y_VELOCITY * 0.0254) * Math.sin(Math.PI / 2 - TRUE_TARGET_DEGREE))
+//        + ((X_VELOCITY * 0.0254) * Math.sin(TRUE_TARGET_DEGREE));
+//double vxr = -((Y_VELOCITY * 0.0254) * Math.cos(Math.PI / 2 - TRUE_TARGET_DEGREE))
+//        + ((X_VELOCITY * 0.0254) * Math.cos(TRUE_TARGET_DEGREE));
+//
+//double vn = FLYWHEEL_VALUES.ARTIFACT_VELOCITY - (vyr * Shooter.vcWeight);
+//double vt = Math.sqrt((vn * vn) + (vxr * vxr));
+//
+//double oo = Math.atan((-vxr) / vn);
+//
+//Configuration.TURRET_OFFSET = oo;
+//Shooter.INSTANCE.HOOD_ANGLE = FLYWHEEL_VALUES.HOOD_ANGLE;
+//Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.artifactVelocityMStoRPM(vt) * 2.75;

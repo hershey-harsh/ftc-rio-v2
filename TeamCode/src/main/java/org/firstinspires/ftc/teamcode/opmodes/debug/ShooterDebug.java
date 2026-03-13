@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmodes.debug;
 
-import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -20,19 +19,18 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
-@TeleOp(name = "Shooter", group = "Debug")
+@TeleOp(name = "Shot", group = "Debug")
 public class ShooterDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;
     ElapsedTime LOOP_TIMER = new ElapsedTime();
 
     private DriverControlledCommand driverControlled;
 
-    private static final double HOOD_STEP = 1.0; // degrees per dpad press
-    private double userBaselineHoodAngle = 56.5; // tracks dpad-controlled baseline separately
+    private static final double RPM_STEP = 100.0;
+    private static final double HOOD_STEP = 1.0;
 
-    // Logged data entries (appended on each A press)
-    private final StringBuilder logEntries = new StringBuilder();
-    private int logCount = 0;
+    private enum DebugMode { MANUAL, LUT_TEST, KINEMATIC }
+    private DebugMode debugMode = DebugMode.MANUAL;
 
     public ShooterDebug() {
         addComponents(
@@ -47,20 +45,11 @@ public class ShooterDebug extends NextFTCOpMode {
     @Override
     public void onInit() {
         Configuration.ALLIANCE = Configuration.Alliance.RED;
-        PedroComponent.follower().setStartingPose(new Pose(72, 72, Math.toRadians(270)));
+        PedroComponent.follower().setStartingPose(new com.pedropathing.geometry.Pose(72, 72, Math.toRadians(270)));
         Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
 
-        // Shooter stays in MANUAL mode so periodic() does NOT auto-set hood
-        // RPM will be driven from onUpdate using the math model
         Shooter.INSTANCE.mode = Shooter.Mode.manual;
-
-        // Turret tracks goal by default
         Turret.INSTANCE.mode = Turret.Mode.odometry;
-
-        // Enable hood servos and set a sensible starting angle
-        Shooter.INSTANCE.hoodServo1.getServo().getController().pwmEnable();
-        Shooter.INSTANCE.hoodServo2.getServo().getController().pwmEnable();
-        Shooter.INSTANCE.setHoodAngle(56.5);
     }
 
     @Override
@@ -73,58 +62,57 @@ public class ShooterDebug extends NextFTCOpMode {
         );
         driverControlled.schedule();
 
-        // Start shooter (sets started=true so periodic() runs, keeps manual mode so hood isn't auto-overridden)
         Shooter.INSTANCE.start().schedule();
-
-        // Intake runs by default on start
-        Transfer.INSTANCE.intake().schedule();
-
-        // Turret servos on
         Turret.INSTANCE.start().schedule();
 
-        // D-Pad Up — increase hood angle manually
+        // DPad Up — increase flywheel RPM by 100
         button(() -> gamepad1.dpad_up)
                 .whenBecomesTrue(() -> {
-                    userBaselineHoodAngle = Math.min(userBaselineHoodAngle + HOOD_STEP, Shooter.INSTANCE.MAX_HOOD_ANGLE);
-                    Shooter.INSTANCE.setHoodAngle(userBaselineHoodAngle);
+                    Shooter.INSTANCE.TARGET_RPM += RPM_STEP;
                 });
 
-        // D-Pad Down — decrease hood angle manually
+        // DPad Down — decrease flywheel RPM by 100
         button(() -> gamepad1.dpad_down)
                 .whenBecomesTrue(() -> {
-                    userBaselineHoodAngle = Math.max(userBaselineHoodAngle - HOOD_STEP, Shooter.INSTANCE.MIN_HOOD_ANGLE);
-                    Shooter.INSTANCE.setHoodAngle(userBaselineHoodAngle);
+                    Shooter.INSTANCE.TARGET_RPM = Math.max(0, Shooter.INSTANCE.TARGET_RPM - RPM_STEP);
                 });
 
-        // Left Bumper — close gate
-        button(() -> gamepad1.left_bumper)
-                .whenBecomesTrue(() -> Transfer.INSTANCE.closeGate().schedule());
+        // DPad Right — increase hood angle by 1°
+        button(() -> gamepad1.dpad_right)
+                .whenBecomesTrue(() -> {
+                    Shooter.INSTANCE.setHoodAngle(Shooter.INSTANCE.HOOD_ANGLE + HOOD_STEP);
+                });
 
-        // Right Bumper — open gate
+        // DPad Left — decrease hood angle by 1°
+        button(() -> gamepad1.dpad_left)
+                .whenBecomesTrue(() -> {
+                    Shooter.INSTANCE.setHoodAngle(Shooter.INSTANCE.HOOD_ANGLE - HOOD_STEP);
+                });
+
+        // Right Bumper — open gate (hold), close on release
         button(() -> gamepad1.right_bumper)
                 .whenBecomesTrue(() -> Transfer.INSTANCE.openGate().schedule())
                 .whenBecomesFalse(() -> Transfer.INSTANCE.closeGate().schedule());
 
-        // A — log: distance (m), hood angle (deg), hood servo position
+        // A — run intake
         button(() -> gamepad1.a)
-                .whenBecomesTrue(() -> {
-                    logCount++;
-                    double distM = Shooter.INSTANCE.GOAL_DISTANCE * 0.0254;
-                    logEntries.append(String.format(
-                            "[%d] dist=%.3fm  hoodAngle=%.1f°  hoodPos=%.4f\n",
-                            logCount, distM,
-                            Shooter.INSTANCE.HOOD_ANGLE,
-                            Shooter.INSTANCE.HOOD_POSITION
-                    ));
-                });
+                .whenBecomesTrue(() -> Transfer.INSTANCE.intake().schedule());
 
-        // B — toggle hood compensation
+        // B — stop intake
         button(() -> gamepad1.b)
-                .toggleOnBecomesTrue()
-                .whenBecomesTrue(() -> Shooter.INSTANCE.hoodCompensationEnabled = true)
-                .whenBecomesFalse(() -> {
-                    Shooter.INSTANCE.hoodCompensationEnabled = false;
-                    Shooter.INSTANCE.setHoodAngle(userBaselineHoodAngle);
+                .whenBecomesTrue(() -> Transfer.INSTANCE.stop().schedule());
+
+        // Y — cycle debug mode: MANUAL → LUT_TEST → KINEMATIC → MANUAL
+        button(() -> gamepad1.y)
+                .whenBecomesTrue(() -> {
+                    if (debugMode == DebugMode.MANUAL) {
+                        debugMode = DebugMode.LUT_TEST;
+                    } else if (debugMode == DebugMode.LUT_TEST) {
+                        debugMode = DebugMode.KINEMATIC;
+                    } else {
+                        debugMode = DebugMode.MANUAL;
+                    }
+                    Shooter.INSTANCE.mode = Shooter.Mode.manual;
                 });
     }
 
@@ -134,79 +122,68 @@ public class ShooterDebug extends NextFTCOpMode {
 
         Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
 
-        // Drive RPM from math model every loop (hood stays wherever user set it)
-        double distMeters = Shooter.INSTANCE.GOAL_DISTANCE * 0.0254;
-        double hoodRad = Math.toRadians(userBaselineHoodAngle);
-        Shooter.INSTANCE.updateKinematics(distMeters, hoodRad);
-        Shooter.INSTANCE.targetRPM = Shooter.INSTANCE.getKinematicRPMGoal() * 2.5;
+        double goalDistInches = Shooter.INSTANCE.GOAL_DISTANCE * 39.37;
+        double velocityMS = Shooter.INSTANCE.rpmToArtifactMSVelocity(Shooter.INSTANCE.TARGET_RPM);
 
-        // Hood compensation: adjust hood based on actual vs target RPM
-        double baselineHood = userBaselineHoodAngle;
-        double compensatedHood = baselineHood;
-        if (Shooter.INSTANCE.hoodCompensationEnabled) {
-            double rpmError = Math.abs(Shooter.INSTANCE.readRPM - Shooter.INSTANCE.targetRPM);
-            if (rpmError > 75) {
-                Shooter.INSTANCE.setPlannedShot(
-                        Shooter.INSTANCE.GOAL_DISTANCE,
-                        Shooter.INSTANCE.targetRPM,
-                        baselineHood
-                );
-                compensatedHood = Shooter.INSTANCE.physicsCompensatedHoodDeg(
-                        Shooter.INSTANCE.GOAL_DISTANCE,
-                        Shooter.INSTANCE.targetRPM,
-                        Shooter.INSTANCE.readRPM,
-                        baselineHood
-                );
-                Shooter.INSTANCE.setHoodAngle(compensatedHood);
-            } else {
-                Shooter.INSTANCE.setHoodAngle(baselineHood);
-            }
+        // Apply LUT values when in LUT test mode
+        Shooter.ShotParameters lutParams = Shooter.getShooterValues(Shooter.INSTANCE.GOAL_DISTANCE);
+        if (debugMode == DebugMode.LUT_TEST) {
+            Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(lutParams.ARTIFACT_VELOCITY);
+            Shooter.INSTANCE.setHoodAngle(lutParams.HOOD_ANGLE);
+        }
+
+        // Apply kinematic RPM when in KINEMATIC mode
+        if (debugMode == DebugMode.KINEMATIC) {
+
+            Shooter.INSTANCE.updateKinematics(
+                    Shooter.INSTANCE.GOAL_DISTANCE,
+                    Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
+            );
+            Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.kinematicRPMGoal * Configuration.RPM_MULTIPLER;
         }
 
         // --- Telemetry ---
-        telemetry.addData("Loop Time (ms)", LOOP_TIME);
-        telemetry.addData("Loop Time (hz)", (1000 / LOOP_TIME));
-
-        telemetry.addLine();
-        telemetry.addData("=== Turret ===", "");
-        telemetry.addData("Mode", Turret.INSTANCE.mode);
-        telemetry.addData("Angle (deg)", Turret.INSTANCE.TURRET_ANGLE);
-        telemetry.addData("Position", Turret.INSTANCE.TURRET_POSITION);
+        telemetry.addData("Loop (ms)", LOOP_TIME);
+        telemetry.addData("Loop (hz)", LOOP_TIME > 0 ? (1000.0 / LOOP_TIME) : 0);
+        telemetry.addData("Mode", debugMode.name());
 
         telemetry.addLine();
         telemetry.addData("=== Goal ===", "");
-        telemetry.addData("Distance (in)", Shooter.INSTANCE.GOAL_DISTANCE);
-        telemetry.addData("Distance (m)", distMeters);
+        telemetry.addData("Distance (in)", "%.2f", goalDistInches);
+        telemetry.addData("Distance (m)", "%.3f", Shooter.INSTANCE.GOAL_DISTANCE);
+
+        telemetry.addLine();
+        telemetry.addData("=== Flywheel ===", "");
+        telemetry.addData("Target RPM", Shooter.INSTANCE.TARGET_RPM);
+        telemetry.addData("Read RPM", Shooter.INSTANCE.READ_RPM);
+        telemetry.addData("Motor Right", Shooter.velocityToRPM((Shooter.INSTANCE.flywheelMotor1.getVelocity())));
+        telemetry.addData("Motor Left", Shooter.velocityToRPM((Shooter.INSTANCE.flywheelMotor2.getVelocity())));
+        telemetry.addData("Velocity (m/s)", "%.3f", velocityMS);
 
         telemetry.addLine();
         telemetry.addData("=== Hood ===", "");
         telemetry.addData("Hood Angle (deg)", Shooter.INSTANCE.HOOD_ANGLE);
-        telemetry.addData("Hood Position", Shooter.INSTANCE.HOOD_POSITION);
-        telemetry.addData("Math Model Angle", Shooter.INSTANCE.getHoodAngle(distMeters));
+        telemetry.addData("Hood Position", "%.4f", Shooter.INSTANCE.HOOD_POSITION);
 
         telemetry.addLine();
-        telemetry.addData("=== Shooter ===", "");
-        telemetry.addData("Target RPM (model)", Shooter.INSTANCE.targetRPM);
-        telemetry.addData("Read RPM", Shooter.INSTANCE.readRPM);
+        telemetry.addData("=== LUT Output ===", "");
+        telemetry.addData("LUT Distance (m)", "%.3f", lutParams.DISTANCE);
+        telemetry.addData("LUT Velocity (m/s)", "%.3f", lutParams.ARTIFACT_VELOCITY);
+        telemetry.addData("LUT RPM", "%.0f", Shooter.artifactVelocityMStoRPM(lutParams.ARTIFACT_VELOCITY));
+        telemetry.addData("LUT Hood Angle (deg)", "%.1f", lutParams.HOOD_ANGLE);
+        telemetry.addData("LUT Time of Flight (s)", "%.3f", lutParams.TIME_OF_FLIGHT);
 
         telemetry.addLine();
-        telemetry.addData("=== Hood Compensation ===", "");
-        telemetry.addData("Enabled", Shooter.INSTANCE.hoodCompensationEnabled);
-        telemetry.addData("Baseline Hood", baselineHood);
-        telemetry.addData("Compensated Hood", compensatedHood);
-        telemetry.addData("Delta (deg)", Shooter.INSTANCE.lastDeltaDeg);
-
-        telemetry.addLine();
-        telemetry.addData("=== Log (press A to record) ===", "");
-        telemetry.addData("Entries", logCount);
-        telemetry.addLine(logEntries.toString());
+        telemetry.addData("=== Kinematic Output ===", "");
+        telemetry.addData("Kinematic RPM Goal", "%.0f", Shooter.INSTANCE.kinematicRPMGoal);
 
         telemetry.addLine();
         telemetry.addLine("--- Controls ---");
-        telemetry.addLine("DPad Up/Down: Hood +/- 1°");
-        telemetry.addLine("LB: Close gate  RB: Open gate");
-        telemetry.addLine("A: Log distance + hood");
-        telemetry.addLine("B: Toggle hood compensation");
+        telemetry.addLine("DPad Up/Down: RPM +/- 100");
+        telemetry.addLine("DPad Left/Right: Hood -/+ 1°");
+        telemetry.addLine("RB: Open gate (hold)");
+        telemetry.addLine("A: Intake | B: Stop intake");
+        telemetry.addLine("Y: Cycle mode (MANUAL→LUT→KINEMATIC)");
 
         BindingManager.update();
         telemetry.update();

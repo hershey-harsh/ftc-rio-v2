@@ -13,8 +13,6 @@ import dev.nextftc.hardware.positionable.ServoGroup;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Configuration;
 
-//import static org.firstinspires.ftc.teamcode.subsystems.Light.GREEN;
-//import static org.firstinspires.ftc.teamcode.subsystems.Light.YELLOW;
 
 public class Turret implements Subsystem {
     public static final Turret INSTANCE = new Turret();
@@ -26,7 +24,9 @@ public class Turret implements Subsystem {
     public ServoEx turretServo2;
     public ServoGroup turretServo;
 
-    public double HEADING_DEGREE = 0, TARGET_DEGREE = 0, ODO_TARGET = 0, TURRET_POSITION = 0, TURRET_ANGLE = 0, ERROR = 0;
+    public double HEADING_DEGREE = 0, TARGET_DEGREE = 0, ODO_TARGET = 0, TURRET_POSITION = 0, TURRET_ANGLE = 0, TRUE_TARGET_DEGREE, ERROR = 0;
+
+    private double currentLightColor = -1;
 
     public Mode mode = Mode.odometry;
 
@@ -68,17 +68,32 @@ public class Turret implements Subsystem {
         if (mode == Mode.odometry) {
             double newTarget = Math.toDegrees(ODO_TARGET) - HEADING_DEGREE;
             TARGET_DEGREE = newTarget;
+            TRUE_TARGET_DEGREE = newTarget;
             setAngle(TARGET_DEGREE + Configuration.TURRET_OFFSET);
         } else if (mode == Mode.manual) {
             setAngle(TARGET_DEGREE + Configuration.TURRET_OFFSET);
+        }
+
+        double normalizedAngle = AngleUnit.normalizeDegrees(TARGET_DEGREE + Configuration.TURRET_OFFSET);
+        double angularError = Math.abs(AngleUnit.normalizeDegrees(TURRET_ANGLE - TRUE_TARGET_DEGREE));
+
+        double desiredColor;
+        if (normalizedAngle > 165 || normalizedAngle < -155) {
+            desiredColor = Light.VIOLET;
+        } else if (angularError <= 2.0) {
+            desiredColor = Light.GREEN;
+        } else {
+            desiredColor = Light.BLUE;
+        }
+
+        if (desiredColor != currentLightColor) {
+            currentLightColor = desiredColor;
+            Light.INSTANCE.setColor(desiredColor, Light.Target.TURRET).schedule();
         }
     }
 
     private void setAngle(double angle) {
         TURRET_ANGLE = angle;
-        // Bias slightly in the direction of the angle to pre-load gears and take up backlash
-//        double biasedAngle = angle + Math.signum(angle) * BACKLASH_COMP_DEGREES;
-//        TURRET_POSITION = interpolateAngle(biasedAngle);
         TURRET_POSITION = interpolateAngle(angle);
         turretServo.setPosition(TURRET_POSITION);
     }
@@ -92,7 +107,6 @@ public class Turret implements Subsystem {
         }
 
         double result = 0.5 - (angle * 0.25) / 90;
-//        double result = 0.5 - (angle / 320.0) * (0.750 - 0.246) * 2; // Should be faster??
 
         if (result > 0.750) {
             result = 0.750;

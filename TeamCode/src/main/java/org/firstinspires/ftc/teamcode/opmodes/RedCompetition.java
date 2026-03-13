@@ -26,7 +26,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
 @TeleOp(name = "Red Competition", group = "Red")
-public class Competition extends NextFTCOpMode {
+public class RedCompetition extends NextFTCOpMode {
     private Shooter.ShotParameters FLYWHEEL_VALUES = Shooter.getShooterValues(0);
     private double X_VELOCITY = 0;
     private double Y_VELOCITY = 0;
@@ -44,7 +44,7 @@ public class Competition extends NextFTCOpMode {
     private boolean gamepad2Override = false;
     private double vt = 0;
 
-    public Competition() {
+    public RedCompetition() {
         addComponents(
                 BindingsComponent.INSTANCE,
                 new PedroComponent(Constants::createFollower),
@@ -77,11 +77,7 @@ public class Competition extends NextFTCOpMode {
         );
 
         driverControlled.schedule();
-
-        // Turret starts tracking goal immediately
-        Turret.INSTANCE.mode = Turret.Mode.odometry;
-        Turret.INSTANCE.start().schedule();
-        Shooter.INSTANCE.on().schedule();
+        Transfer.INSTANCE.intake().schedule();
 
 //        button(() -> gamepad1.a && !gamepad2Override)
 //                .toggleOnBecomesFalse()
@@ -111,11 +107,6 @@ public class Competition extends NextFTCOpMode {
 
         ///  Gamepad 2 Bindings  ///
 
-//        button(() -> gamepad2.right_bumper)
-//                .toggleOnBecomesFalse()
-//                .whenBecomesTrue(() -> Turret.INSTANCE.changeToAuto().schedule())
-//                .whenBecomesFalse(() -> Turret.INSTANCE.changeToManual().schedule());
-
         button(() -> gamepad2.left_bumper)
                 .toggleOnBecomesFalse()
                 .whenBecomesTrue(() -> Shooter.INSTANCE.on().schedule())
@@ -125,11 +116,6 @@ public class Competition extends NextFTCOpMode {
                 .whenTrue(() -> Transfer.INSTANCE.openGate().schedule())
                 .whenBecomesFalse(() -> Transfer.INSTANCE.closeGate().schedule());
 
-//        button(() -> gamepad2.b)
-//                .toggleOnBecomesFalse()
-//                .whenBecomesTrue(() -> Transfer.INSTANCE.gate3Start().schedule())
-//                .whenBecomesFalse(() -> Transfer.INSTANCE.gate3Stop().schedule());
-//
         button(() -> gamepad2.a)
                 .toggleOnBecomesFalse()
                 .whenBecomesTrue(() -> Transfer.INSTANCE.intake().schedule())
@@ -268,50 +254,6 @@ public class Competition extends NextFTCOpMode {
         }
 
 
-//        telemetry.addData("COLOR R:", "%.3f", Transfer.redValues);
-//        telemetry.addData("COLOR G:", "%.3f", Transfer.greenValues);
-//        telemetry.addData("COLOR B:", "%.3f", Transfer.blueValues);
-//        telemetry.addData("Is Purple:", Transfer.INSTANCE.isPurple());
-//        telemetry.addData("Is Green:", Transfer.INSTANCE.isGreen());
-
-        telemetry.addData("=== Position ===", "");
-        telemetry.addData("Position X:", PedroComponent.follower().getPose().getX());
-        telemetry.addData("Position Y:", PedroComponent.follower().getPose().getY());
-        telemetry.addData("Heading", Math.toDegrees(PedroComponent.follower().getPose().getHeading()));
-
-        telemetry.addData("=== DEBUG ===", "");
-        telemetry.addData("Flywheel RPM Goal (static)", Shooter.INSTANCE.getKinematicRPMGoal() * Configuration.RPM_MULTIPLER);
-        telemetry.addData("Flywheel RPM Goal (vel comp)", Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER * Configuration.RPM_MULTIPLER);
-        telemetry.addData("Velocity Comp (m/s)", Configuration.VELOCITY_COMPENSATION_WEIGHT);
-
-//        telemetry.addData("Turret Target", Turret.INSTANCE.TARGET_DEGREE);
-//        telemetry.addData("Turret Servo Pos", "%.3f", Turret.INSTANCE.TURRET_POSITION);
-//        telemetry.addData("Turret Servo Pos", "%.3f", Turret.INSTANCE.TURRET_POSITION);
-//        telemetry.addData("LL Auto Update", Limelight.INSTANCE.autoUpdateEnabled);
-//        telemetry.addData("LL Localizing", Limelight.INSTANCE.limelightResult != null && Limelight.INSTANCE.limelightResult.isValid());
-
-//        telemetry.addData("=== Turret ===", "");
-//        telemetry.addData("Turret Mode", Turret.INSTANCE.mode);
-//        telemetry.addData("Turret Angle", Turret.INSTANCE.TURRET_ANGLE);
-//        telemetry.addData("Turret Position", Turret.INSTANCE.TURRET_POSITION);
-//        telemetry.addData("Turret Offset, (deg)", Math.toDegrees(Configuration.TURRET_OFFSET));
-////        telemetry.addData("Turret Target", Turret.INSTANCE.TARGET_DEGREE);
-////        telemetry.addData("Turret Servo Pos", "%.3f", Turret.INSTANCE.TURRET_POSITION);
-//
-//        telemetry.addData("=== Shooter ===", "");
-////        telemetry.addData("Shooter Mode", Shooter.INSTANCE.mode);
-//        telemetry.addData("Goal Distance (in)", Shooter.INSTANCE.GOAL_DISTANCE);
-//        telemetry.addData("Flywheel RPM (measured)", Shooter.INSTANCE.READ_RPM);
-//        telemetry.addData("Flywheel RPM Goal (static)", Shooter.INSTANCE.getKinematicRPMGoal());
-//        telemetry.addData("Flywheel RPM Goal (SOTM corrected)", Shooter.INSTANCE.TARGET_RPM);
-//        telemetry.addData("Hood Angle (deg)", Shooter.INSTANCE.HOOD_ANGLE);
-//        telemetry.addData("Hood Position", Shooter.INSTANCE.HOOD_POSITION);
-////        telemetry.addData("TOF estimate (s)", Shooter.INSTANCE.getTof());
-////        telemetry.addData("Aim Weight (s)", Shooter.INSTANCE.getWeight());
-//        telemetry.addData("X Offset", Configuration.X_GOAL_OFFSET);
-//        telemetry.addData("Y Offset", Configuration.Y_GOAL_OFFSET);
-//        //telemetry.addData("Hood Angle", Shooter.INSTANCE.HOOD_ANGLE);
-//        //telemetry.addData("Close Run (ms)", Shooter.INSTANCE.runMs);
 
         BindingManager.update();
         telemetry.update();

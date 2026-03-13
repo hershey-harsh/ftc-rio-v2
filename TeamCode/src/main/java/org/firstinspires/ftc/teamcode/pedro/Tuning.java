@@ -886,13 +886,12 @@ class PredictiveBrakingTuner extends OpMode {
                 telemetryM.debug("Braking Profile:");
                 for (BrakeRecord record : brakeData) {
                     Pose p = record.pose;
-//                    telemetryM.debug(String.format("t=%.0f ms, x=%.2f, y=%.2f, θ=%.2f, v=%.2f",
-//                            record.timeMs, p.getX(), p.getY(),
-//                            p.getHeading(),
-//                            record.velocity));
+                    telemetryM.debug(String.format("t=%.0f ms, x=%.2f, y=%.2f, θ=%.2f, v=%.2f",
+                            record.timeMs, p.getX(), p.getY(),
+                            p.getHeading(),
+                            record.velocity));
                 }
 
-                telemetryM.update(telemetry);
                 telemetryM.debug("kQuadraticFriction", coefficients[1]);
                 telemetryM.debug("kLinearBraking", coefficients[0]);
                 telemetryM.update(telemetry);

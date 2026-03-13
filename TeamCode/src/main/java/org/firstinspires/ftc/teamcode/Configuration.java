@@ -18,8 +18,8 @@ public class Configuration {
     public static final String SERVER_GATE_RIGHT = "servo1B";
     public static final String HOOD_SERVO_RIGHT = "servo4B";
     public static final String HOOD_SERVO_LEFT = "servo3B"; //servo%B
-    public static final String ROBOT_LIGHT = "servo4";
-    public static final String TURRET_LIGHT = "servo5";
+    public static final String ROBOT_LIGHT = "servo5";
+    public static final String TURRET_LIGHT = "servo4";
     public static final String RIGHT_TURRET_MOTOR = "motor0B";
     public static final String LEFT_TURRET_MOTOR = "motor1B";
 
@@ -38,6 +38,8 @@ public class Configuration {
 
     public static double ARTIFACT_TRANSFER_TIME = 0.7;
     public static double SHOOTER_HEIGHT_TO_GOAL = 1.1;
+    public static double VELOCITY_COMPENSATION_WEIGHT = 0.3; // how much to adjust hood angle based on shooter wheel velocity
+    public static double RPM_MULTIPLER = 2; // adjust this to fine-tune shooter wheel RPM without changing the LUT
     public static double SHOOTER_TIME = 0.6;
 
 
