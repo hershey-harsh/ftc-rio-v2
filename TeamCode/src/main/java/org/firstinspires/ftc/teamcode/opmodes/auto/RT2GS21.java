@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opmodes.debug;
+package org.firstinspires.ftc.teamcode.opmodes.auto;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
@@ -8,6 +8,7 @@ import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import dev.nextftc.core.commands.groups.ParallelGroup;
 import dev.nextftc.core.commands.groups.SequentialGroup;
 import dev.nextftc.core.commands.delays.Delay;
 import dev.nextftc.core.components.BindingsComponent;
@@ -22,11 +23,8 @@ import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
-@Autonomous(name = "Red Better Auto", group = "Red Alliance")
-public class RedBetterAuto extends NextFTCOpMode {
-    private static double X_VELOCITY = 0;
-    private static double Y_VELOCITY = 0;
-
+@Autonomous(name = "RT2GS21 - All", group = "Red Alliance")
+public class RT2GS21 extends NextFTCOpMode {
     double LOOP_TIME = 0;
     ElapsedTime LOOP_TIMER = new ElapsedTime();
 
@@ -39,7 +37,7 @@ public class RedBetterAuto extends NextFTCOpMode {
 
     private static double RPM_SCALE_FACTOR = 2.75;
 
-    public RedBetterAuto() {
+    public RT2GS21() {
         addComponents(
                 BindingsComponent.INSTANCE,
                 new PedroComponent(Constants::createFollower),
@@ -60,17 +58,17 @@ public class RedBetterAuto extends NextFTCOpMode {
         Configuration.CURRENT_POSE = startPose;
 
         // Start intake and other subsystems early
-        Transfer.INSTANCE.intake().schedule();
+        Transfer.INSTANCE.start().schedule();
         Turret.INSTANCE.start().schedule();
-        Turret.INSTANCE.changeToAuto().schedule();
-        Shooter.INSTANCE.on().schedule();
+        Shooter.INSTANCE.start().schedule();
 
         telemetry.addData("Alliance:", "Red");
-        telemetry.addData("Side:", "Better");
-        telemetry.addData("Order:", "Preload, R2, Launch, Gate x3, R1, Launch");
+        telemetry.addData("Side:", "Top");
+        telemetry.addData("Order:", "Preload, R2, Gate x3, R1, R3, Move");
         telemetry.addData("Gate:", "True");
         telemetry.addData("Solo:", "True");
-        telemetry.addData("Total Count:", "10");
+        telemetry.addData("Total Count:", "18");
+
         telemetry.update();
     }
 
@@ -79,7 +77,10 @@ public class RedBetterAuto extends NextFTCOpMode {
 
         new SequentialGroup(
                 // Launch Preload
-                new FollowPath(paths.LaunchPreload),
+                new ParallelGroup(
+                        Transfer.INSTANCE.intake(),
+                        new FollowPath(paths.LaunchPreload)
+                ),
                 Transfer.INSTANCE.openGate(),
                 new Delay(Configuration.SHOOTER_TIME),
                 Transfer.INSTANCE.closeGate(),
@@ -126,17 +127,19 @@ public class RedBetterAuto extends NextFTCOpMode {
     public void onUpdate() {
         LOOP_TIMER.reset();
 
-        X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
-        Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
+        Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
 
-        double headingDeg = Math.toDegrees(PedroComponent.follower().getPose().getHeading());
+        Shooter.INSTANCE.updateKinematics(
+                Shooter.INSTANCE.GOAL_DISTANCE,
+                Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
+        );
+
+        Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.KINEMATIC_RPM_GOAL * Configuration.RPM_MULTIPLER;
 
         telemetry.addLine("=== Position ===");
         telemetry.addData("X", PedroComponent.follower().getPose().getX());
         telemetry.addData("Y", PedroComponent.follower().getPose().getY());
-        telemetry.addData("Heading", headingDeg);
-
-        telemetry.addLine();
+        telemetry.addData("Heading", Math.toDegrees(PedroComponent.follower().getPose().getHeading()));
 
         telemetry.update();
 
@@ -195,14 +198,14 @@ public class RedBetterAuto extends NextFTCOpMode {
                     new BezierCurve(
                             new Pose(84.636, 83.836),
                             new Pose(103.016, 59.184),
-                            new Pose(130.741, 62.604)
+                            new Pose(130.30463636363638, 61.29490909090909)
                     )
             ).setLinearHeadingInterpolation(Math.toRadians(-48), Math.toRadians(24.34))
                     .build();
 
             GateLaunch1 = follower.pathBuilder().addPath(
                     new BezierCurve(
-                            new Pose(130.741, 62.604),
+                            new Pose(130.30463636363638, 61.29490909090909),
                             new Pose(102.489, 59.475),
                             new Pose(84.636, 83.836)
                     )
@@ -213,14 +216,14 @@ public class RedBetterAuto extends NextFTCOpMode {
                     new BezierCurve(
                             new Pose(84.636, 83.836),
                             new Pose(103.016, 59.277),
-                            new Pose(130.741, 62.604)
+                            new Pose(130.30463636363638, 61.29490909090909)
                     )
             ).setLinearHeadingInterpolation(Math.toRadians(-48), Math.toRadians(24.3))
                     .build();
 
             GateLaunch2 = follower.pathBuilder().addPath(
                     new BezierCurve(
-                            new Pose(130.741, 62.604),
+                            new Pose(130.30463636363638, 61.29490909090909),
                             new Pose(102.489, 59.475),
                             new Pose(84.703, 83.830)
                     )
@@ -231,14 +234,14 @@ public class RedBetterAuto extends NextFTCOpMode {
                     new BezierCurve(
                             new Pose(84.703, 83.830),
                             new Pose(103.016, 59.184),
-                            new Pose(130.741, 62.604)
+                            new Pose(130.30463636363638, 61.29490909090909)
                     )
             ).setLinearHeadingInterpolation(Math.toRadians(-48), Math.toRadians(24.3))
                     .build();
 
             GateLaunch3 = follower.pathBuilder().addPath(
                     new BezierCurve(
-                            new Pose(130.741, 62.604),
+                            new Pose(130.30463636363638, 61.29490909090909),
                             new Pose(102.489, 59.475),
                             new Pose(84.636, 83.836)
                     )

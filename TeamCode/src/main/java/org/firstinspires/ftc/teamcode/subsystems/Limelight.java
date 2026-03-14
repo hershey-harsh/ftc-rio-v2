@@ -53,6 +53,8 @@ public class Limelight implements Subsystem {
     public double lastCorrectedY = 0.0;
     public double lastCorrectedHeadingDeg = 0.0;
 
+    public Pose3D botpose3D;
+
     private Limelight() {}
 
     @Override
@@ -78,13 +80,22 @@ public class Limelight implements Subsystem {
     }
 
     private void updateLocalization() {
+        // Feed robot orientation for MegaTag 2
+        double robotHeadingDeg = Math.toDegrees(Configuration.CURRENT_POSE.getHeading());
+        double turretDeg = Turret.INSTANCE.TURRET_ANGLE + LIMELIGHT_TURRET_YAW_OFFSET_DEG;
+        limelight.updateRobotOrientation(robotHeadingDeg + turretDeg);
+
         limelightResult = limelight.getLatestResult();
         pollCount++;
 
         if (limelightResult != null && limelightResult.isValid()) {
             validResultCount++;
 
-            Pose3D botpose3D = limelightResult.getBotpose();
+            botpose3D = limelightResult.getBotpose_MT2();
+            if (botpose3D == null) {
+                botpose3D = limelightResult.getBotpose();
+            }
+
             if (botpose3D != null) {
                 lastRawBotpose = botpose3D;
 
@@ -94,7 +105,6 @@ public class Limelight implements Subsystem {
                 double camYawDeg = botpose3D.getOrientation().getYaw();
 
                 // Turret angle relative to robot
-                double turretDeg = Turret.INSTANCE.TURRET_ANGLE + LIMELIGHT_TURRET_YAW_OFFSET_DEG;
                 double turretRad = Math.toRadians(turretDeg);
 
                 // Rotate the camera offset by turret angle
@@ -131,7 +141,9 @@ public class Limelight implements Subsystem {
                 lastMeasurementTimestamp = timestamp;
                 measurementSentCount++;
 
-                Configuration.fusionLocalizer.addMeasurement(pedroPose, timestamp);
+                if (Configuration.fusionLocalizer != null) {
+                    Configuration.fusionLocalizer.addMeasurement(pedroPose, timestamp);
+                }
 
                 if (!autoUpdateEnabled) {
                     Light.INSTANCE.setColor(BLUE, Light.Target.ROBOT).schedule();

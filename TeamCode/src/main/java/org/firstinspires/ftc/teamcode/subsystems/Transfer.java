@@ -2,8 +2,10 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Configuration;
@@ -37,6 +39,7 @@ public class Transfer implements Subsystem {
     public ServoEx servoGate1;
     public ServoEx servoGate2;
 
+    public DigitalChannel gate1And2Sensor;
     public RevColorSensorV3 gate3Sensor;
     public static double gate3Distance;
 
@@ -44,10 +47,16 @@ public class Transfer implements Subsystem {
     public static boolean override = false;
 
     // Gate 3 auto-stop
-    private boolean gateOverride = false;       // true when openGate() is called — ignores distance
-    private boolean gate3Stopped = false;        // true after ball detected and motor stopped
-    private boolean started = false;             // true after intake() is called — prevents running during init
+    private boolean GATE_OVERRIDE = false;       // true when openGate() is called — ignores distance
+    private boolean GATE3_STOPPED = false;        // true after ball detected and motor stopped
+    private boolean STARTED = false;             // true after intake() is called — prevents running during init
     private static final double GATE3_THRESHOLD = 3.0;  // cm
+
+    // All-full auto-stop: both gate3 AND gate1And2 triggered for 3+ seconds
+    private final ElapsedTime BOTH_FULL_TIMER = new ElapsedTime();
+    private boolean BOTH_FULL_TIMER_RUNNING = false;
+    private boolean ALL_STOPPED = false;          // true after both sensors full for 3s — all motors stopped
+    private static final double ALL_FULL_TIMEOUT = 3.0; // seconds
 
     @Override
     public void initialize() {
@@ -57,11 +66,15 @@ public class Transfer implements Subsystem {
         servoGate1 = new ServoEx(ActiveOpMode.hardwareMap().get(Servo.class, Configuration.SERVO_GATE_LEFT));
         servoGate2 = new ServoEx(ActiveOpMode.hardwareMap().get(Servo.class, Configuration.SERVER_GATE_RIGHT));
 
+        gate1And2Sensor = ActiveOpMode.hardwareMap().get(DigitalChannel.class, Configuration.GATE_1_AND_2_SENSOR);
+        gate1And2Sensor.setMode(DigitalChannel.Mode.INPUT);
         gate3Sensor = ActiveOpMode.hardwareMap().get(RevColorSensorV3.class, Configuration.GATE_3_SENSOR);
 
-        started = false;
-        gateOverride = false;
-        gate3Stopped = false;
+        STARTED = false;
+        GATE_OVERRIDE = false;
+        GATE3_STOPPED = false;
+        ALL_STOPPED = false;
+        BOTH_FULL_TIMER_RUNNING = false;
         servoGate1.setPosition(GATE_ONE_CLOSED);
         servoGate2.setPosition(GATE_TWO_CLOSED);
     }
@@ -69,25 +82,46 @@ public class Transfer implements Subsystem {
     @Override
     public void periodic() {
         gate3Distance = gate3Sensor.getDistance(DistanceUnit.CM);
+        boolean GATE3_FULL = gate3Distance < GATE3_THRESHOLD;
+        boolean GATE12_FULL = false; // true = ball detected
 
-        if (!started) return;
-        if (gateOverride) return;
+        if (!STARTED) return;
+        if (GATE_OVERRIDE) return;
 
-        if (gate3Distance < GATE3_THRESHOLD) {
-            // Ball detected — run for 0.5s then stop
-            if (!gate3Stopped) {
-                gate3Stopped = true;
+        // --- All-full auto-stop: both sensors full for 3+ seconds, stop motor1 (gate 1&2) ---
+        // motor2 (gate 3) is already handled by gate3 auto-stop below
+        if (GATE3_FULL && GATE12_FULL) {
+            if (!BOTH_FULL_TIMER_RUNNING) {
+                BOTH_FULL_TIMER.reset();
+                BOTH_FULL_TIMER_RUNNING = true;
+            }
+            if (!ALL_STOPPED && BOTH_FULL_TIMER.seconds() >= ALL_FULL_TIMEOUT) {
+                ALL_STOPPED = true;
+                transferMotor1.setPower(0);
+            }
+        } else {
+            BOTH_FULL_TIMER_RUNNING = false;
+            if (ALL_STOPPED) {
+                ALL_STOPPED = false;
+                transferMotor1.setPower(-INTAKE_POWER);
+            }
+        }
+
+        if (ALL_STOPPED) return;
+
+        if (GATE3_FULL) {
+            if (!GATE3_STOPPED) {
+                GATE3_STOPPED = true;
                 new SequentialGroup(
                         new Delay(0.5),
                         new InstantCommand(() -> {
-                            if (!gateOverride) transferMotor2.setPower(0);
+                            if (!GATE_OVERRIDE && !ALL_STOPPED) transferMotor2.setPower(0);
                         })
                 ).schedule();
             }
         } else {
-            // No ball — if motor was stopped, restart it
-            if (gate3Stopped) {
-                gate3Stopped = false;
+            if (GATE3_STOPPED) {
+                GATE3_STOPPED = false;
                 transferMotor2.setPower(-INTAKE_POWER);
             }
         }
@@ -95,7 +129,7 @@ public class Transfer implements Subsystem {
 
     public Command intake() {
         return new InstantCommand(() -> {
-            started = true;
+            STARTED = true;
             CURRENT_POWER = -INTAKE_POWER;
             THIRD_GATE_POWER = INTAKE_POWER;
             transferMotor1.setPower(CURRENT_POWER);
@@ -142,7 +176,7 @@ public class Transfer implements Subsystem {
         });
     }
 
-    public Command startAll() {
+    public Command start() {
         return new InstantCommand(() -> {
             transferMotor1.getMotor().setMotorEnable();
             transferMotor2.getMotor().setMotorEnable();
@@ -163,19 +197,26 @@ public class Transfer implements Subsystem {
 
     public  Command openGate() {
         return new InstantCommand(() -> {
-            gateOverride = true;
-            gate3Stopped = false;
+            GATE_OVERRIDE = true;
+            GATE3_STOPPED = false;
+            ALL_STOPPED = false;
+            BOTH_FULL_TIMER_RUNNING = false;
             THIRD_GATE_POWER = INTAKE_POWER;
+
+            // Run motors first, then open gate
+            transferMotor1.setPower(-INTAKE_POWER);
+            transferMotor2.setPower(-THIRD_GATE_POWER);
             servoGate1.setPosition(GATE_ONE_OPEN);
             servoGate2.setPosition(GATE_TWO_OPEN);
-            transferMotor2.setPower(-THIRD_GATE_POWER);
         });
     }
 
     public Command closeGate() {
         return new InstantCommand(() -> {
-            gateOverride = false;
-            gate3Stopped = false;
+            GATE_OVERRIDE = false;
+            GATE3_STOPPED = false;
+            ALL_STOPPED = false;
+            BOTH_FULL_TIMER_RUNNING = false;
             THIRD_GATE_POWER = INTAKE_POWER;
             transferMotor2.setPower(-THIRD_GATE_POWER);
             servoGate1.setPosition(GATE_ONE_CLOSED);

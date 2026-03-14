@@ -128,6 +128,7 @@ public class FusionLocalizerDebug extends NextFTCOpMode {
         telemetry.addData("Botpose Null", Limelight.INSTANCE.botposeNullCount);
         telemetry.addData("Measurements Sent", Limelight.INSTANCE.measurementSentCount);
         telemetry.addData("Manual Updates", updateCount);
+        telemetry.addData("April Tag Position", Limelight.INSTANCE.botpose3D);
 
         // --- Raw LL Result ---
         telemetry.addLine();

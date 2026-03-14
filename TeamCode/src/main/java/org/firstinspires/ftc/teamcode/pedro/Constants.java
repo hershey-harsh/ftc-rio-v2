@@ -8,6 +8,7 @@ import com.pedropathing.ftc.FollowerBuilder;
 import com.pedropathing.ftc.localization.constants.PinpointConstants;
 import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
 import com.pedropathing.localization.FusionLocalizer;
+import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -27,8 +28,8 @@ public class Constants {
             // but without jittering the robot. You may also lower kP if you want smoother reactions.
             .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.3, 0.086595400785,0.0025996451))
             .headingPIDFCoefficients(new PIDFCoefficients(1.2, 0, 0.08, 0.025)); //TODO: Fine tune these values using automatic tuner
-            //.secondaryHeadingPIDFCoefficients((new PIDFCoefficients(1, 0, 0.01, 0.025))) //TODO: Fine tune these values
-            //.useSecondaryHeadingPIDF(true)
+    //.secondaryHeadingPIDFCoefficients((new PIDFCoefficients(1, 0, 0.01, 0.025))) //TODO: Fine tune these values
+    //.useSecondaryHeadingPIDF(true)
 
     public static PathConstraints pathConstraints = new PathConstraints(0.95, 100, 1, 1);
 
@@ -64,13 +65,13 @@ public class Constants {
 //                new PinpointLocalizer(hardwareMap, localizerConstants),
 //                // Accuracy of initial position
 //                // x (inches), y (inches), angle (radians)
-//                new double[]{0.5, 0.5, 0.05},   // P: initial covariance
+//                new Pose(0.5, 0.5, 0.05),   // P: initial covariance
 //                // Error accumulation of localizer over time
 //                // x (in^2/s^2), y (in^2/s^2), angle (rad^2/s^s)
-//                new double[]{1.0, 1.0, 0.1},    // Q: process variance
+//                new Pose(1.0, 1.0, 0.1),    // Q: process variance
 //                // Accuracy of measurement to be fused (usually vision)
 //                // x (inches), y (inches), angle (radians)
-//                new double[]{4.0, 4.0, 0.04},   // R: measurement variance
+//                new Pose(4.0, 4.0, 0.04),   // R: measurement variance
 //                // Path history points to retain. You must retain enough
 //                // history to account for the delay of vision detections.
 //                // The # of points is dependent on the speed of your control

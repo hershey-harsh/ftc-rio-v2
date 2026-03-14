@@ -16,16 +16,17 @@ public class Light implements Subsystem {
 
     private ServoEx robotLight;
     private ServoEx turretLight;
-    private ElapsedTime robotTimer = new ElapsedTime();
-    private ElapsedTime turretTimer = new ElapsedTime();
 
-    private double robotColor = WHITE, robotInterval = 0;
-    private boolean robotBlinkOn = true;
-    private int robotBlinkCount = 0, robotBlinkAmount = -1;
+    private ElapsedTime ROBOT_TIMER = new ElapsedTime();
+    private ElapsedTime TURRET_TIMER = new ElapsedTime();
 
-    private double turretColor = WHITE, turretInterval = 0;
-    private boolean turretBlinkOn = true;
-    private int turretBlinkCount = 0, turretBlinkAmount = -1;
+    private double ROBOT_COLOR = WHITE, ROBOT_INTERVAL = 0;
+    private boolean ROBOT_BLINK_ON = true;
+    private int ROBOT_BLINK_COUNT = 0, ROBOT_BLINK_AMOUNT = -1;
+
+    private double TURRET_COLOR = WHITE, TURRET_INTERVAL = 0;
+    private boolean TURRET_BLINK_ON = true;
+    private int TURRET_BLINK_COUNT = 0, TURRET_BLINK_AMOUNT = -1;
 
     public static final double OFF = 0.0, RED = 0.277, ORANGE = 0.333, YELLOW = 0.388;
     public static final double SAGE = 0.444, GREEN = 0.5, AZURE = 0.555, BLUE = 0.611;
@@ -44,17 +45,17 @@ public class Light implements Subsystem {
         robotLight = new ServoEx(ActiveOpMode.hardwareMap().get(Servo.class, Configuration.ROBOT_LIGHT));
         turretLight = new ServoEx(ActiveOpMode.hardwareMap().get(Servo.class, Configuration.TURRET_LIGHT));
 
-        robotColor = WHITE;
-        robotInterval = 0;
-        robotBlinkOn = true;
-        robotBlinkCount = 0;
-        robotBlinkAmount = -1;
+        ROBOT_COLOR = WHITE;
+        ROBOT_INTERVAL = 0;
+        ROBOT_BLINK_ON = true;
+        ROBOT_BLINK_COUNT = 0;
+        ROBOT_BLINK_AMOUNT = -1;
 
-        turretColor = WHITE;
-        turretInterval = 0;
-        turretBlinkOn = true;
-        turretBlinkCount = 0;
-        turretBlinkAmount = -1;
+        TURRET_COLOR = WHITE;
+        TURRET_INTERVAL = 0;
+        TURRET_BLINK_ON = true;
+        TURRET_BLINK_COUNT = 0;
+        TURRET_BLINK_AMOUNT = -1;
 
         robotLight.getServo().setPosition(GREEN);
         turretLight.getServo().setPosition(GREEN);
@@ -62,46 +63,46 @@ public class Light implements Subsystem {
 
     @Override
     public void periodic() {
-        if (robotInterval > 0 && robotTimer.milliseconds() >= robotInterval) {
-            robotBlinkOn = !robotBlinkOn;
-            if (!robotBlinkOn) robotBlinkCount++;
-            robotTimer.reset();
+        if (ROBOT_INTERVAL > 0 && ROBOT_TIMER.milliseconds() >= ROBOT_INTERVAL) {
+            ROBOT_BLINK_ON = !ROBOT_BLINK_ON;
+            if (!ROBOT_BLINK_ON) ROBOT_BLINK_COUNT++;
+            ROBOT_TIMER.reset();
 
-            if (robotBlinkAmount > 0 && robotBlinkCount >= robotBlinkAmount) {
-                robotInterval = 0;
-                robotBlinkOn = false;
+            if (ROBOT_BLINK_AMOUNT > 0 && ROBOT_BLINK_COUNT >= ROBOT_BLINK_AMOUNT) {
+                ROBOT_INTERVAL = 0;
+                ROBOT_BLINK_ON = false;
             }
         }
-        robotLight.setPosition(robotBlinkOn ? robotColor : OFF);
+        robotLight.setPosition(ROBOT_BLINK_ON ? ROBOT_COLOR : OFF);
 
-        if (turretInterval > 0 && turretTimer.milliseconds() >= turretInterval) {
-            turretBlinkOn = !turretBlinkOn;
-            if (!turretBlinkOn) turretBlinkCount++;
-            turretTimer.reset();
+        if (TURRET_INTERVAL > 0 && TURRET_TIMER.milliseconds() >= TURRET_INTERVAL) {
+            TURRET_BLINK_ON = !TURRET_BLINK_ON;
+            if (!TURRET_BLINK_ON) TURRET_BLINK_COUNT++;
+            TURRET_TIMER.reset();
 
-            if (turretBlinkAmount > 0 && turretBlinkCount >= turretBlinkAmount) {
-                turretInterval = 0;
-                turretBlinkOn = false;
+            if (TURRET_BLINK_AMOUNT > 0 && TURRET_BLINK_COUNT >= TURRET_BLINK_AMOUNT) {
+                TURRET_INTERVAL = 0;
+                TURRET_BLINK_ON = false;
             }
         }
-        turretLight.setPosition(turretBlinkOn ? turretColor : OFF);
+        turretLight.setPosition(TURRET_BLINK_ON ? TURRET_COLOR : OFF);
     }
 
     public Command setColor(double color, Target target) {
         return new InstantCommand(() -> {
             if (target == Target.ROBOT || target == Target.BOTH) {
-                this.robotColor = color;
-                this.robotInterval = 0;
-                this.robotBlinkOn = true;
-                this.robotBlinkCount = 0;
-                this.robotBlinkAmount = -1;
+                this.ROBOT_COLOR = color;
+                this.ROBOT_INTERVAL = 0;
+                this.ROBOT_BLINK_ON = true;
+                this.ROBOT_BLINK_COUNT = 0;
+                this.ROBOT_BLINK_AMOUNT = -1;
             }
             if (target == Target.TURRET || target == Target.BOTH) {
-                this.turretColor = color;
-                this.turretInterval = 0;
-                this.turretBlinkOn = true;
-                this.turretBlinkCount = 0;
-                this.turretBlinkAmount = -1;
+                this.TURRET_COLOR = color;
+                this.TURRET_INTERVAL = 0;
+                this.TURRET_BLINK_ON = true;
+                this.TURRET_BLINK_COUNT = 0;
+                this.TURRET_BLINK_AMOUNT = -1;
             }
         });
     }
@@ -113,20 +114,20 @@ public class Light implements Subsystem {
     public Command setBlinkingColor(double color, double intervalMs, int amount, Target target) {
         return new InstantCommand(() -> {
             if (target == Target.ROBOT || target == Target.BOTH) {
-                this.robotColor = color;
-                this.robotInterval = intervalMs;
-                this.robotBlinkOn = true;
-                this.robotBlinkCount = 0;
-                this.robotBlinkAmount = amount;
-                robotTimer.reset();
+                this.ROBOT_COLOR = color;
+                this.ROBOT_INTERVAL = intervalMs;
+                this.ROBOT_BLINK_ON = true;
+                this.ROBOT_BLINK_COUNT = 0;
+                this.ROBOT_BLINK_AMOUNT = amount;
+                ROBOT_TIMER.reset();
             }
             if (target == Target.TURRET || target == Target.BOTH) {
-                this.turretColor = color;
-                this.turretInterval = intervalMs;
-                this.turretBlinkOn = true;
-                this.turretBlinkCount = 0;
-                this.turretBlinkAmount = amount;
-                turretTimer.reset();
+                this.TURRET_COLOR = color;
+                this.TURRET_INTERVAL = intervalMs;
+                this.TURRET_BLINK_ON = true;
+                this.TURRET_BLINK_COUNT = 0;
+                this.TURRET_BLINK_AMOUNT = amount;
+                TURRET_TIMER.reset();
             }
         });
     }

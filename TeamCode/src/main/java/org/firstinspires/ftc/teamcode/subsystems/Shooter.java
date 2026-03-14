@@ -6,9 +6,6 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.firstinspires.ftc.teamcode.Configuration;
 
 import dev.nextftc.control.ControlSystem;
@@ -48,7 +45,6 @@ public class Shooter implements Subsystem {
 
     public double FLYWHEEL_RPM_GOAL = 0;
     public double TARGET_RPM = 0;
-    public double READ_RPM = 0;
 
     public double HOOD_ANGLE = 70;
     public double HOOD_POSITION = 0.1;
@@ -112,62 +108,20 @@ public class Shooter implements Subsystem {
 
         if (mode == Mode.odometry) {
             HOOD_ANGLE = getHoodAngle(GOAL_DISTANCE);
-            setHoodAngle(HOOD_ANGLE);
+            if (Configuration.CURRENT_POSE.getY() < 36) {
+                Shooter.INSTANCE.setHoodAngle(43);
+            } else {
+                Shooter.INSTANCE.setHoodAngle(HOOD_ANGLE);
+            }
         }
 
         double targetVelocity = rpmToVelocity(TARGET_RPM);
         controlSystem.setGoal(new KineticState(0.0, targetVelocity));
         flywheelMotor.setPower(controlSystem.calculate(flywheelMotor.getState()));
-
-        double m1Ticks = Math.abs(flywheelMotor1.getMotor().getVelocity());
-        double m2Ticks = Math.abs(flywheelMotor2.getMotor().getVelocity());
-        READ_RPM = velocityToRPM((m1Ticks + m2Ticks) / 2.0);
-    }
-
-    public static class ShotParameters {
-        public final double DISTANCE;
-        public final double ARTIFACT_VELOCITY;
-        public final double HOOD_ANGLE;
-        public final double TIME_OF_FLIGHT;
-
-        public ShotParameters(double DISTANCE, double ARTIFACT_VELOCITY, double HOOD_ANGLE, double TIME_OF_FLIGHT) {
-            this.DISTANCE = DISTANCE;
-            this.ARTIFACT_VELOCITY = ARTIFACT_VELOCITY;
-            this.HOOD_ANGLE = HOOD_ANGLE;
-            this.TIME_OF_FLIGHT = TIME_OF_FLIGHT;
-        }
-    }
-
-    private static final TreeMap<Double, ShotParameters> SHOOTER_LOOKUP = new TreeMap<>();
-    static {
-        //                                               Distance (in -> m)                 Velocity M/S               HoodAngle             ToF
-        SHOOTER_LOOKUP.put(42.12 * 0.0254,  new ShotParameters(42.12 * 0.0254,  rpmToArtifactMSVelocity(2600), 70, 0.6));
-        SHOOTER_LOOKUP.put(68.63 * 0.0254,  new ShotParameters(68.63 * 0.0254,  rpmToArtifactMSVelocity(3000), 50, 0.55));
-        SHOOTER_LOOKUP.put(75.54 * 0.0254,  new ShotParameters(75.54 * 0.0254,  rpmToArtifactMSVelocity(3200), 44, 0.48));
-    }
-
-    public static ShotParameters getShooterLUT(double distInches) {
-        if (SHOOTER_LOOKUP.isEmpty()) return new ShotParameters(distInches, 0, 0.5, 0.4);
-
-        Map.Entry<Double, ShotParameters> lo = SHOOTER_LOOKUP.floorEntry(distInches);
-        Map.Entry<Double, ShotParameters> hi = SHOOTER_LOOKUP.ceilingEntry(distInches);
-
-        if (lo == null) return hi != null ? hi.getValue() : new ShotParameters(distInches, 0, 0.5, 0.4);
-        if (hi == null) return lo.getValue();
-        if (lo.getKey().equals(hi.getKey())) return lo.getValue();
-
-        double t = (distInches - lo.getKey()) / (hi.getKey() - lo.getKey());
-        ShotParameters a = lo.getValue(), b = hi.getValue();
-        return new ShotParameters(
-                distInches,
-                a.ARTIFACT_VELOCITY  + t * (b.ARTIFACT_VELOCITY  - a.ARTIFACT_VELOCITY),
-                a.HOOD_ANGLE + t * (b.HOOD_ANGLE - a.HOOD_ANGLE),
-                a.TIME_OF_FLIGHT       + t * (b.TIME_OF_FLIGHT       - a.TIME_OF_FLIGHT)
-        );
     }
 
     private double a, b, n, t_u, t_g, tof, vX, vY, v, m;
-    public double kinematicRPMGoal = 0;
+    public double KINEMATIC_RPM_GOAL = 0;
 
     public double getHoodAngle(double meters) {
 //        return Math.max((-4.8701 * meters) + 59.754, 43);
@@ -190,32 +144,18 @@ public class Shooter implements Subsystem {
 
         v = Math.sqrt((vX * vX) + (vY * vY));
 
-        kinematicRPMGoal = (v / (2 * Math.PI * 0.036)) * 60;
+        KINEMATIC_RPM_GOAL = (v / (2 * Math.PI * 0.036)) * 60;
     }
 
     public double shooterVKinematic() { return v; }
     public double getTof() { return tof; }
-    public double getKinematicRPMGoal() { return kinematicRPMGoal; }
-
-    public static ShotParameters getShooterValues(double GOAL_DISTANCE) {
-        return getShooterLUT(GOAL_DISTANCE);
-    }
-
-    public static double rpmToArtifactMSVelocity(double rpm) {
-        return (rpm / 60.0) * (2 * Math.PI * 0.036);
-    }
-
-    public static double artifactVelocityMStoRPM(double velocity) {
-        return (velocity / (2 * Math.PI * 0.036)) * 60;
-    }
-
+    public double getKinematicRPMGoal() { return KINEMATIC_RPM_GOAL; }
+    public static double rpmToArtifactMSVelocity(double rpm) { return (rpm / 60.0) * (2 * Math.PI * 0.036); }
+    public static double artifactVelocityMStoRPM(double velocity) { return (velocity / (2 * Math.PI * 0.036)) * 60; }
     public static double rpmToVelocity(double rpm) {
         return rpm * TICKS_PER_REV / 60.0;
     }
-
-    public static double velocityToRPM(double velocity) {
-        return (velocity / TICKS_PER_REV) * 60.0;
-    }
+    public static double velocityToRPM(double velocity) { return (velocity / TICKS_PER_REV) * 60.0; }
 
     public void stopShooter() {
         flywheelMotor1.getMotor().setPower(0);

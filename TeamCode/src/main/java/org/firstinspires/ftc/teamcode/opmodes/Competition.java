@@ -25,9 +25,8 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
-@TeleOp(name = "Red Competition", group = "Red")
+@TeleOp(name = "Teleop Debug", group = "Debug")
 public class Competition extends NextFTCOpMode {
-    private Shooter.ShotParameters FLYWHEEL_VALUES = Shooter.getShooterValues(0);
     private double X_VELOCITY = 0;
     private double Y_VELOCITY = 0;
     public double TRUE_TARGET_DEGREE = 0;
@@ -62,9 +61,9 @@ public class Competition extends NextFTCOpMode {
         frontRightMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         backLeftMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         backRightMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-
-        PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
-//        PedroComponent.follower().setStartingPose(new Pose(72, 72, Math.toRadians(270)));
+//
+//        PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
+        PedroComponent.follower().setStartingPose(new Pose(72, 72, Math.toRadians(270)));
     }
 
     @Override
@@ -105,7 +104,7 @@ public class Competition extends NextFTCOpMode {
                 .whenBecomesFalse(() -> {
 //                    Light.INSTANCE.setColor(Light.GREEN, Light.Target.ROBOT).schedule();
                     Shooter.INSTANCE.start().schedule();
-                    Transfer.INSTANCE.startAll().schedule();
+                    Transfer.INSTANCE.start().schedule();
                     Turret.INSTANCE.start().schedule();
                 });
 
@@ -193,7 +192,7 @@ public class Competition extends NextFTCOpMode {
                 .whenBecomesFalse(() -> {
 //                    Light.INSTANCE.setColor(Light.GREEN, Light.Target.ROBOT).schedule();
                     Shooter.INSTANCE.start().schedule();
-                    Transfer.INSTANCE.startAll().schedule();
+                    Transfer.INSTANCE.start().schedule();
                     Turret.INSTANCE.start().schedule();
                 });
 
@@ -221,50 +220,58 @@ public class Competition extends NextFTCOpMode {
         driverControlled.setScalar(Configuration.CONTROL_SCALE);
 
         if (Shooter.INSTANCE.mode == Shooter.Mode.odometry) {
-            X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
-            Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
 
-            Shooter.INSTANCE.updateKinematics(
-                    Shooter.INSTANCE.GOAL_DISTANCE,
-                    Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-            );
-
-            Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.kinematicRPMGoal * Configuration.RPM_MULTIPLER;
-
-            TRUE_TARGET_DEGREE = Turret.INSTANCE.TRUE_TARGET_DEGREE;
-            double weight;
-
-            if (!Double.isNaN(Shooter.INSTANCE.getTof())) {
-                weight = Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME;
+            if (Configuration.CURRENT_POSE.getY() < 36) {
+                Shooter.INSTANCE.TARGET_RPM = 4100;
+                Configuration.TURRET_OFFSET = -2;
             } else {
-                weight = 0.3;
-            }
+                X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
+                Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
 
-            Configuration.setAimPointOffset(-X_VELOCITY * weight, -Y_VELOCITY * weight);
+                Shooter.INSTANCE.updateKinematics(
+                        Shooter.INSTANCE.GOAL_DISTANCE,
+                        Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
+                );
 
-            double vyr = ((Y_VELOCITY * 0.0254) * Math.sin(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                    + ((X_VELOCITY * 0.0254) * Math.sin(TRUE_TARGET_DEGREE));
-            double vxr = -((Y_VELOCITY * 0.0254) * Math.cos(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                    + ((X_VELOCITY * 0.0254) * Math.cos(TRUE_TARGET_DEGREE));
+                Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.KINEMATIC_RPM_GOAL * (Configuration.RPM_MULTIPLER);
 
-            double additionalCompensation = 0;
+                TRUE_TARGET_DEGREE = Turret.INSTANCE.TRUE_TARGET_DEGREE;
+                double weight;
 
-            if (Y_VELOCITY < 0 || X_VELOCITY < 0) {
-                additionalCompensation = -0.5;
-            }
+                if (!Double.isNaN(Shooter.INSTANCE.getTof())) {
+                    weight = Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME;
+                } else {
+                    weight = 0.3;
+                }
 
-            double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
-            vt = Math.sqrt((vn * vn) + (vxr * vxr));
+                double additionalCompensation = 0;
+                double weightCompensation = 0;
+
+                if (Y_VELOCITY < 0 || X_VELOCITY < 0) {
+                    additionalCompensation = -0.35;
+                    weightCompensation = -0.15;
+                }
+
+                Configuration.setAimPointOffset(-X_VELOCITY * (weight + weightCompensation), -Y_VELOCITY * (weight + weightCompensation));
+
+                double vyr = ((Y_VELOCITY * 0.0254) * Math.sin(Math.PI / 2 - TRUE_TARGET_DEGREE))
+                        + ((X_VELOCITY * 0.0254) * Math.sin(TRUE_TARGET_DEGREE));
+                double vxr = -((Y_VELOCITY * 0.0254) * Math.cos(Math.PI / 2 - TRUE_TARGET_DEGREE))
+                        + ((X_VELOCITY * 0.0254) * Math.cos(TRUE_TARGET_DEGREE));
+
+                double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
+                vt = Math.sqrt((vn * vn) + (vxr * vxr));
 
 //            double oo = Math.atan((-vxr) / vn);
 //
-            Configuration.TURRET_OFFSET = 2;
-            Shooter.INSTANCE.updateKinematics(
-                    Shooter.INSTANCE.GOAL_DISTANCE,
-                    Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-            );
+                Configuration.TURRET_OFFSET = -2;
+                Shooter.INSTANCE.updateKinematics(
+                        Shooter.INSTANCE.GOAL_DISTANCE,
+                        Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
+                );
 
-            Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER;
+                Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER;
+            }
         }
 
 

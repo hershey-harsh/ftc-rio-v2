@@ -26,7 +26,7 @@ public class Turret implements Subsystem {
 
     public double HEADING_DEGREE = 0, TARGET_DEGREE = 0, ODO_TARGET = 0, TURRET_POSITION = 0, TURRET_ANGLE = 0, TRUE_TARGET_DEGREE, ERROR = 0;
 
-    private double currentLightColor = -1;
+    private double CURRENT_LIGHT_COLOR = -1;
 
     public Mode mode = Mode.odometry;
 
@@ -86,8 +86,8 @@ public class Turret implements Subsystem {
             desiredColor = Light.BLUE;
         }
 
-        if (desiredColor != currentLightColor) {
-            currentLightColor = desiredColor;
+        if (desiredColor != CURRENT_LIGHT_COLOR) {
+            CURRENT_LIGHT_COLOR = desiredColor;
             Light.INSTANCE.setColor(desiredColor, Light.Target.TURRET).schedule();
         }
     }

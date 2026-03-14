@@ -1,4 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmodes;
+import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -8,6 +9,7 @@ import dev.nextftc.bindings.BindingManager;
 import dev.nextftc.bindings.Range;
 import dev.nextftc.core.components.BindingsComponent;
 import dev.nextftc.core.components.SubsystemComponent;
+import dev.nextftc.extensions.pedro.FollowPath;
 import dev.nextftc.extensions.pedro.PedroComponent;
 import dev.nextftc.extensions.pedro.PedroDriverControlled;
 import dev.nextftc.ftc.Gamepads;
@@ -21,13 +23,13 @@ import org.firstinspires.ftc.teamcode.pedro.Constants;
 //import org.firstinspires.ftc.teamcode.subsystems.Light;
 //import org.firstinspires.ftc.teamcode.subsystems.Limelight;
 import org.firstinspires.ftc.teamcode.subsystems.Light;
+import org.firstinspires.ftc.teamcode.subsystems.Limelight;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
-@TeleOp(name = "Red Competition", group = "Red")
+@TeleOp(name = "Red Competition SOTM", group = "Red")
 public class RedCompetition extends NextFTCOpMode {
-    private Shooter.ShotParameters FLYWHEEL_VALUES = Shooter.getShooterValues(0);
     private double X_VELOCITY = 0;
     private double Y_VELOCITY = 0;
     public double TRUE_TARGET_DEGREE = 0;
@@ -42,14 +44,18 @@ public class RedCompetition extends NextFTCOpMode {
     private DriverControlledCommand driverControlled;
 
     private boolean gamepad2Override = false;
-    private double vt = 0;
+
+    private ElapsedTime matchTimer = new ElapsedTime();
+    private boolean endGameWarningTriggered = false;
+    private static final double MATCH_DURATION = 120.0; // 2 minutes in seconds
+    private static final double END_GAME_WARNING = 20.0; // last 20 seconds
 
     public RedCompetition() {
         addComponents(
                 BindingsComponent.INSTANCE,
                 new PedroComponent(Constants::createFollower),
                 new SubsystemComponent(Light.INSTANCE),
-//                new SubsystemComponent(Limelight.INSTANCE),
+                new SubsystemComponent(Limelight.INSTANCE),
                 new SubsystemComponent(Shooter.INSTANCE),
                 new SubsystemComponent(Transfer.INSTANCE),
                 new SubsystemComponent(Turret.INSTANCE)
@@ -64,11 +70,14 @@ public class RedCompetition extends NextFTCOpMode {
         backRightMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
-//        PedroComponent.follower().setStartingPose(new Pose(72, 72, Math.toRadians(270)));
+        Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.1;
     }
 
     @Override
     public void onStartButtonPressed() {
+        matchTimer.reset();
+        endGameWarningTriggered = false;
+
         driverControlled = new PedroDriverControlled(
                 Gamepads.gamepad1().leftStickY().negate(),
                 Gamepads.gamepad1().leftStickX().negate(),
@@ -78,71 +87,87 @@ public class RedCompetition extends NextFTCOpMode {
 
         driverControlled.schedule();
         Transfer.INSTANCE.intake().schedule();
+        Shooter.INSTANCE.on().schedule();
 
-//        button(() -> gamepad1.a && !gamepad2Override)
-//                .toggleOnBecomesFalse()
-//                .whenBecomesTrue(() -> Limelight.INSTANCE.enableAutoUpdate().schedule())
-//                .whenBecomesFalse(() -> Limelight.INSTANCE.disableAutoUpdate().schedule());
+        /// ---- Gamepad 1 (Driver) ---- ///
 
-//        button(() -> gamepad1.b && !gamepad2Override)
-//                .whenTrue(() -> Limelight.INSTANCE.update().schedule());
-
-        button(() -> gamepad1.x && !gamepad2Override)
-                .whenTrue(() -> PedroComponent.follower().setPose(Configuration.MANUAL_LOCALIZATION_POSE));
-
-        button(() -> gamepad1.back && !gamepad2Override)
+        // Left D-Pad → Emergency Stop (toggle)
+        button(() -> gamepad1.back)
                 .toggleOnBecomesTrue()
                 .whenTrue(() -> {
-//                    Light.INSTANCE.setBlinkingColor(Light.RED, 250).schedule();
                     Shooter.INSTANCE.emergencyStop().schedule();
                     Transfer.INSTANCE.emergencyStopAll().schedule();
                     Turret.INSTANCE.emergencyStop().schedule();
                 })
                 .whenBecomesFalse(() -> {
-//                    Light.INSTANCE.setColor(Light.GREEN, Light.Target.ROBOT).schedule();
                     Shooter.INSTANCE.start().schedule();
-                    Transfer.INSTANCE.startAll().schedule();
+                    Transfer.INSTANCE.start().schedule();
                     Turret.INSTANCE.start().schedule();
                 });
 
-        ///  Gamepad 2 Bindings  ///
+        // X (Blue) → Blue Alliance Override
+        button(() -> gamepad1.x)
+                .whenTrue(() -> {
+                    Configuration.ALLIANCE = Configuration.Alliance.BLUE;
+                });
 
-        button(() -> gamepad2.left_bumper)
+        button(() -> gamepad1.dpad_up)
+                .whenTrue(() -> {
+                    new FollowPath(
+                        PedroComponent.follower().pathBuilder().addPath(
+                            new BezierCurve(
+                                new Pose(
+                                    Configuration.CURRENT_POSE.getX(),
+                                    Configuration.CURRENT_POSE.getY(),
+                                    Configuration.CURRENT_POSE.getHeading()
+                                ),
+                                Configuration.GATE_OPEN_RED
+                            )
+                        ).build()
+                    ).schedule();
+                });
+
+        // X (Red) → Red Alliance Override
+        button(() -> gamepad1.b)
+                .whenTrue(() -> {
+                    Configuration.ALLIANCE = Configuration.Alliance.RED;
+                });
+
+        // Y (Yellow) → Limelight Localization On / Off (toggle)
+        button(() -> gamepad1.y)
                 .toggleOnBecomesFalse()
-                .whenBecomesTrue(() -> Shooter.INSTANCE.on().schedule())
-                .whenBecomesFalse(() -> Shooter.INSTANCE.off().schedule());
+                .whenBecomesTrue(() -> Limelight.INSTANCE.enableAutoUpdate().schedule())
+                .whenBecomesFalse(() -> Limelight.INSTANCE.disableAutoUpdate().schedule());
 
-        button(() -> gamepad2.right_bumper)
-                .whenTrue(() -> Transfer.INSTANCE.openGate().schedule())
-                .whenBecomesFalse(() -> Transfer.INSTANCE.closeGate().schedule());
+        // Left Dpad → Relocalize Human Player
+        button(() -> gamepad1.dpad_left)
+                .whenTrue(() -> PedroComponent.follower().setPose(Configuration.MANUAL_LOCALIZATION_POSE));
 
-        button(() -> gamepad2.a)
-                .toggleOnBecomesFalse()
-                .whenBecomesTrue(() -> Transfer.INSTANCE.intake().schedule())
-                .whenBecomesFalse(() -> Transfer.INSTANCE.outtake().schedule());
+        /// ---- Gamepad 2 (Operator) ---- ///
 
-        button(() -> gamepad2.y)
-                .toggleOnBecomesFalse()
-                .whenBecomesTrue(() -> Shooter.INSTANCE.changeToAuto().schedule())
-                .whenBecomesFalse(() -> Shooter.INSTANCE.changeToManual().schedule());
-
-        button(() -> gamepad2.x)
-                .toggleOnBecomesFalse()
-                .whenBecomesTrue(() -> Turret.INSTANCE.changeToAuto().schedule())
-                .whenBecomesFalse(() -> Turret.INSTANCE.changeToManual().schedule());
-
+        // D-Pad Left → Turret Offset –
         button(() -> gamepad2.dpad_left)
-                .whenTrue(() -> Turret.INSTANCE.increaseAngle().schedule());
-
-        button(() -> gamepad2.dpad_right)
                 .whenTrue(() -> Turret.INSTANCE.decreaseAngle().schedule());
 
-        button(() -> gamepad2.dpad_up)
-                .whenTrue(() -> Configuration.RPM_MULTIPLER += 0.01);
+        // D-Pad Right → Turret Offset +
+        button(() -> gamepad2.dpad_right)
+                .whenTrue(() -> Turret.INSTANCE.increaseAngle().schedule());
 
-        button(() -> gamepad2.dpad_down)
-                .whenTrue(() -> Configuration.RPM_MULTIPLER -= 0.01);
+        // Back → Emergency Stop (toggle)
+        button(() -> gamepad2.back)
+                .toggleOnBecomesTrue()
+                .whenTrue(() -> {
+                    Shooter.INSTANCE.emergencyStop().schedule();
+                    Transfer.INSTANCE.emergencyStopAll().schedule();
+                    Turret.INSTANCE.emergencyStop().schedule();
+                })
+                .whenBecomesFalse(() -> {
+                    Shooter.INSTANCE.start().schedule();
+                    Transfer.INSTANCE.start().schedule();
+                    Turret.INSTANCE.start().schedule();
+                });
 
+        // Start → Driver 1 Override (toggle)
         button(() -> gamepad2.start)
                 .toggleOnBecomesFalse()
                 .whenBecomesTrue(() -> {
@@ -168,29 +193,36 @@ public class RedCompetition extends NextFTCOpMode {
                     driverControlled.schedule();
                 });
 
-        button(() -> gamepad2.back)
-                .toggleOnBecomesTrue()
+        // X (Blue) → Hold Position Off
+        button(() -> gamepad2.y)
                 .whenTrue(() -> {
-//                    Light.INSTANCE.setBlinkingColor(Light.RED, 250).schedule();
-                    Shooter.INSTANCE.emergencyStop().schedule();
-                    Transfer.INSTANCE.emergencyStopAll().schedule();
-                    Turret.INSTANCE.emergencyStop().schedule();
-                })
-                .whenBecomesFalse(() -> {
-//                    Light.INSTANCE.setColor(Light.GREEN, Light.Target.ROBOT).schedule();
-                    Shooter.INSTANCE.start().schedule();
-                    Transfer.INSTANCE.startAll().schedule();
-                    Turret.INSTANCE.start().schedule();
+                    PedroComponent.follower().breakFollowing();
                 });
 
-        //TODO: Test left stick x on Gamepad 2.
+        // A (Green) → Hold Position On
+        button(() -> gamepad2.a)
+                .whenTrue(() -> {
+                    PedroComponent.follower().holdPoint(PedroComponent.follower().getPose());
+                });
 
-        Range shooterAdjustRange = Gamepads.gamepad2().leftStickX()
-                .map(value -> !gamepad2Override ? value : 0)
-                .deadZone(0.1);
-        shooterAdjustRange
-                .asButton(value -> value != 0)
-                .whenTrue(() -> Shooter.INSTANCE.adjustShooterRPM(shooterAdjustRange.get()).schedule());
+        // B (Red) → Intake Off
+        button(() -> gamepad2.b)
+                .whenTrue(() -> Transfer.INSTANCE.stop().schedule());
+
+        // X (Red) → Intake On
+        button(() -> gamepad2.x)
+                .whenTrue(() -> Transfer.INSTANCE.intake().schedule());
+
+        button(() -> gamepad2.right_bumper)
+                .whenTrue(() -> Transfer.INSTANCE.openGate().schedule())
+                .whenBecomesFalse(() -> Transfer.INSTANCE.closeGate().schedule());
+
+        // Right Stick → Intake On (when stick is pushed past deadzone)
+        Range intakeRange = Gamepads.gamepad2().rightStickY()
+                .deadZone(0.3);
+        intakeRange
+                .asButton(value -> Math.abs(value) > 0)
+                .whenTrue(() -> Transfer.INSTANCE.intake().schedule());
     }
 
     @Override
@@ -207,53 +239,63 @@ public class RedCompetition extends NextFTCOpMode {
         driverControlled.setScalar(Configuration.CONTROL_SCALE);
 
         if (Shooter.INSTANCE.mode == Shooter.Mode.odometry) {
-            X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
-            Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
-
-            Shooter.INSTANCE.updateKinematics(
-                    Shooter.INSTANCE.GOAL_DISTANCE,
-                    Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-            );
-
-            Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.kinematicRPMGoal * Configuration.RPM_MULTIPLER;
-
-            TRUE_TARGET_DEGREE = Turret.INSTANCE.TRUE_TARGET_DEGREE;
-            double weight;
-
-            if (!Double.isNaN(Shooter.INSTANCE.getTof())) {
-                weight = Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME;
+            if (Configuration.CURRENT_POSE.getY() < 36) {
+                Shooter.INSTANCE.TARGET_RPM = 4200;
+                Configuration.TURRET_OFFSET = -2;
             } else {
-                weight = 0.3;
-            }
+                X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
+                Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
 
-            Configuration.setAimPointOffset(-X_VELOCITY * weight, -Y_VELOCITY * weight);
+                Shooter.INSTANCE.updateKinematics(
+                        Shooter.INSTANCE.GOAL_DISTANCE,
+                        Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
+                );
 
-            double vyr = ((Y_VELOCITY * 0.0254) * Math.sin(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                    + ((X_VELOCITY * 0.0254) * Math.sin(TRUE_TARGET_DEGREE));
-            double vxr = -((Y_VELOCITY * 0.0254) * Math.cos(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                    + ((X_VELOCITY * 0.0254) * Math.cos(TRUE_TARGET_DEGREE));
+                Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.KINEMATIC_RPM_GOAL * (Configuration.RPM_MULTIPLER);
 
-            double additionalCompensation = 0;
+                TRUE_TARGET_DEGREE = Turret.INSTANCE.TRUE_TARGET_DEGREE;
+                double weight;
 
-            if (Y_VELOCITY < 0 || X_VELOCITY < 0) {
-                additionalCompensation = -0.5;
-            }
+                if (!Double.isNaN(Shooter.INSTANCE.getTof())) {
+                    weight = Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME;
+                } else {
+                    weight = 0.3;
+                }
 
-            double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
-            vt = Math.sqrt((vn * vn) + (vxr * vxr));
+                double additionalCompensation = 0;
+                double weightCompensation = 0;
 
-//            double oo = Math.atan((-vxr) / vn);
+                if (Y_VELOCITY < 0 || X_VELOCITY < 0) {
+                    additionalCompensation = -0.35;
+                    weightCompensation = -0.15;
+                }
+
+                Configuration.setAimPointOffset(-X_VELOCITY * (weight + weightCompensation), -Y_VELOCITY * (weight + weightCompensation));
+
+                double vyr = ((Y_VELOCITY * 0.0254) * Math.sin(Math.PI / 2 - TRUE_TARGET_DEGREE))
+                        + ((X_VELOCITY * 0.0254) * Math.sin(TRUE_TARGET_DEGREE));
+                double vxr = -((Y_VELOCITY * 0.0254) * Math.cos(Math.PI / 2 - TRUE_TARGET_DEGREE))
+                        + ((X_VELOCITY * 0.0254) * Math.cos(TRUE_TARGET_DEGREE));
+
+                double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
+                double vt = Math.sqrt((vn * vn) + (vxr * vxr));
 //
-            Configuration.TURRET_OFFSET = 2;
-            Shooter.INSTANCE.updateKinematics(
-                    Shooter.INSTANCE.GOAL_DISTANCE,
-                    Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-            );
+                Configuration.TURRET_OFFSET = -2;
+                Shooter.INSTANCE.updateKinematics(
+                        Shooter.INSTANCE.GOAL_DISTANCE,
+                        Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
+                );
 
-            Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER;
+                Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER;
+            }
         }
 
 
+        // End-game warning: blink red 4 times on both lights in the last 20 seconds
+        if (!endGameWarningTriggered && matchTimer.seconds() >= (MATCH_DURATION - END_GAME_WARNING)) {
+            endGameWarningTriggered = true;
+            Light.INSTANCE.setBlinkingColor(Light.RED, 250, 4, Light.Target.BOTH).schedule();
+        }
 
         BindingManager.update();
         telemetry.update();

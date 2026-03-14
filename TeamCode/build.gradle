@@ -26,7 +26,7 @@ android {
         main {
             java {
                 // Exclude files that aren't ready for deployment
-                exclude '**/opmodes/auto/**'
+                exclude '**/pedro/ConstantsV1**'
             }
         }
     }

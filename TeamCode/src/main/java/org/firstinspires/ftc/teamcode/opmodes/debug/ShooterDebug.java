@@ -126,11 +126,11 @@ public class ShooterDebug extends NextFTCOpMode {
         double velocityMS = Shooter.INSTANCE.rpmToArtifactMSVelocity(Shooter.INSTANCE.TARGET_RPM);
 
         // Apply LUT values when in LUT test mode
-        Shooter.ShotParameters lutParams = Shooter.getShooterValues(Shooter.INSTANCE.GOAL_DISTANCE);
-        if (debugMode == DebugMode.LUT_TEST) {
-            Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(lutParams.ARTIFACT_VELOCITY);
-            Shooter.INSTANCE.setHoodAngle(lutParams.HOOD_ANGLE);
-        }
+//        Shooter.ShotParameters lutParams = Shooter.getShooterValues(Shooter.INSTANCE.GOAL_DISTANCE);
+//        if (debugMode == DebugMode.LUT_TEST) {
+//            Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(lutParams.ARTIFACT_VELOCITY);
+//            Shooter.INSTANCE.setHoodAngle(lutParams.HOOD_ANGLE);
+//        }
 
         // Apply kinematic RPM when in KINEMATIC mode
         if (debugMode == DebugMode.KINEMATIC) {
@@ -139,7 +139,7 @@ public class ShooterDebug extends NextFTCOpMode {
                     Shooter.INSTANCE.GOAL_DISTANCE,
                     Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
             );
-            Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.kinematicRPMGoal * Configuration.RPM_MULTIPLER;
+            Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.KINEMATIC_RPM_GOAL * Configuration.RPM_MULTIPLER;
         }
 
         // --- Telemetry ---
@@ -155,7 +155,7 @@ public class ShooterDebug extends NextFTCOpMode {
         telemetry.addLine();
         telemetry.addData("=== Flywheel ===", "");
         telemetry.addData("Target RPM", Shooter.INSTANCE.TARGET_RPM);
-        telemetry.addData("Read RPM", Shooter.INSTANCE.READ_RPM);
+//        telemetry.addData("Read RPM", Shooter.INSTANCE.READ_RPM);
         telemetry.addData("Motor Right", Shooter.velocityToRPM((Shooter.INSTANCE.flywheelMotor1.getVelocity())));
         telemetry.addData("Motor Left", Shooter.velocityToRPM((Shooter.INSTANCE.flywheelMotor2.getVelocity())));
         telemetry.addData("Velocity (m/s)", "%.3f", velocityMS);
@@ -167,15 +167,15 @@ public class ShooterDebug extends NextFTCOpMode {
 
         telemetry.addLine();
         telemetry.addData("=== LUT Output ===", "");
-        telemetry.addData("LUT Distance (m)", "%.3f", lutParams.DISTANCE);
-        telemetry.addData("LUT Velocity (m/s)", "%.3f", lutParams.ARTIFACT_VELOCITY);
-        telemetry.addData("LUT RPM", "%.0f", Shooter.artifactVelocityMStoRPM(lutParams.ARTIFACT_VELOCITY));
-        telemetry.addData("LUT Hood Angle (deg)", "%.1f", lutParams.HOOD_ANGLE);
-        telemetry.addData("LUT Time of Flight (s)", "%.3f", lutParams.TIME_OF_FLIGHT);
+//        telemetry.addData("LUT Distance (m)", "%.3f", lutParams.DISTANCE);
+//        telemetry.addData("LUT Velocity (m/s)", "%.3f", lutParams.ARTIFACT_VELOCITY);
+//        telemetry.addData("LUT RPM", "%.0f", Shooter.artifactVelocityMStoRPM(lutParams.ARTIFACT_VELOCITY));
+//        telemetry.addData("LUT Hood Angle (deg)", "%.1f", lutParams.HOOD_ANGLE);
+//        telemetry.addData("LUT Time of Flight (s)", "%.3f", lutParams.TIME_OF_FLIGHT);
 
         telemetry.addLine();
         telemetry.addData("=== Kinematic Output ===", "");
-        telemetry.addData("Kinematic RPM Goal", "%.0f", Shooter.INSTANCE.kinematicRPMGoal);
+        telemetry.addData("Kinematic RPM Goal", "%.0f", Shooter.INSTANCE.KINEMATIC_RPM_GOAL);
 
         telemetry.addLine();
         telemetry.addLine("--- Controls ---");

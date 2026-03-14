@@ -10,6 +10,7 @@ import java.util.Locale;
 
 import dev.nextftc.bindings.BindingManager;
 import dev.nextftc.core.components.BindingsComponent;
+import dev.nextftc.core.components.SubsystemComponent;
 import dev.nextftc.extensions.pedro.PedroComponent;
 import dev.nextftc.extensions.pedro.PedroDriverControlled;
 import dev.nextftc.ftc.Gamepads;
@@ -19,6 +20,7 @@ import static dev.nextftc.bindings.Bindings.*;
 
 import org.firstinspires.ftc.teamcode.Configuration;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
+import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 
 @TeleOp(name = "Position Fetcher (Debug)", group = "Debug")
 public class PositionFetcher extends NextFTCOpMode {
@@ -34,7 +36,8 @@ public class PositionFetcher extends NextFTCOpMode {
     public PositionFetcher() {
         addComponents(
                 BindingsComponent.INSTANCE,
-                new PedroComponent(Constants::createFollower)
+                new PedroComponent(Constants::createFollower),
+                new SubsystemComponent(Transfer.INSTANCE)
         );
     }
 
@@ -94,6 +97,7 @@ public class PositionFetcher extends NextFTCOpMode {
         telemetry.addData("X", String.format(Locale.US, "%.3f", currentPose.getX()));
         telemetry.addData("Y", String.format(Locale.US, "%.3f", currentPose.getY()));
         telemetry.addData("Heading (deg)", String.format(Locale.US, "%.2f", headingDeg));
+        telemetry.addData("Gate", Transfer.INSTANCE.gate1And2Sensor.getState());
         telemetry.addLine("");
         telemetry.addLine("Press A to save current position");
         telemetry.addLine("Press B to clear saved positions");
