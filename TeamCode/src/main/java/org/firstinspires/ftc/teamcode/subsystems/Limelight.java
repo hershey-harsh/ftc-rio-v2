@@ -18,8 +18,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.Configuration;
 
-import static org.firstinspires.ftc.teamcode.subsystems.Light.AZURE;
-import static org.firstinspires.ftc.teamcode.subsystems.Light.BLUE;
 
 public class Limelight implements Subsystem {
     public static final Limelight INSTANCE = new Limelight();
@@ -74,7 +72,6 @@ public class Limelight implements Subsystem {
     @Override
     public void periodic() {
         if (autoUpdateEnabled) {
-            Light.INSTANCE.setBlinkingColor(AZURE, 500, Light.Target.ROBOT).schedule();
             updateLocalization();
         }
     }
@@ -144,10 +141,6 @@ public class Limelight implements Subsystem {
                 if (Configuration.fusionLocalizer != null) {
                     Configuration.fusionLocalizer.addMeasurement(pedroPose, timestamp);
                 }
-
-                if (!autoUpdateEnabled) {
-                    Light.INSTANCE.setColor(BLUE, Light.Target.ROBOT).schedule();
-                }
             } else {
                 botposeNullCount++;
             }
@@ -173,14 +166,12 @@ public class Limelight implements Subsystem {
     }
 
     public Command disableAutoUpdate() {
-        Light.INSTANCE.setColor(BLUE, Light.Target.ROBOT).schedule();
         return new InstantCommand(() -> autoUpdateEnabled = false);
     }
 
     public Command update() {
         return new InstantCommand(() -> {
             if (autoUpdateEnabled) return;
-            Light.INSTANCE.setColor(AZURE, Light.Target.ROBOT).schedule();
             updateLocalization();
         });
     }

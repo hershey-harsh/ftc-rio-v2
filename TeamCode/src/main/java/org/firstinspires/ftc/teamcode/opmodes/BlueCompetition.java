@@ -34,8 +34,8 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
-@TeleOp(name = "Red Competition SOTM", group = "Red")
-public class RedCompetition extends NextFTCOpMode {
+@TeleOp(name = "Blue Competition SOTM", group = "Blue")
+public class BlueCompetition extends NextFTCOpMode {
     private double X_VELOCITY = 0;
     private double Y_VELOCITY = 0;
     public double TRUE_TARGET_DEGREE = 0;
@@ -54,7 +54,7 @@ public class RedCompetition extends NextFTCOpMode {
     private Supplier<PathChain> gateOpenPath;
 
 
-    public RedCompetition() {
+    public BlueCompetition() {
         addComponents(
                 BindingsComponent.INSTANCE,
                 new PedroComponent(Constants::createFollower),
@@ -97,17 +97,17 @@ public class RedCompetition extends NextFTCOpMode {
                     ? Configuration.GATE_OPEN_BLUE
                     : Configuration.GATE_OPEN_RED;
             return PedroComponent.follower().pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                PedroComponent.follower().getPose(),
-                                target
-                        )
-                )
-                .setLinearHeadingInterpolation(
-                        PedroComponent.follower().getPose().getHeading(),
-                        target.getHeading()
-                )
-                .build();
+                    .addPath(
+                            new BezierLine(
+                                    PedroComponent.follower().getPose(),
+                                    target
+                            )
+                    )
+                    .setLinearHeadingInterpolation(
+                            PedroComponent.follower().getPose().getHeading(),
+                            target.getHeading()
+                    )
+                    .build();
         };
 
         /// ---- Gamepad 1 (Driver) ---- ///

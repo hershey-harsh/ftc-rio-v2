@@ -28,7 +28,7 @@ public class Shooter implements Subsystem {
     public static final double TICKS_PER_REV = 28.0;
 
     public static PIDCoefficients coefficients = new PIDCoefficients(0.0125, 0.0, 0.0001);
-    public static BasicFeedforwardParameters ffcoefficients = new BasicFeedforwardParameters(0.00015, 0.0, 0.0);
+    public static BasicFeedforwardParameters ffcoefficients = new BasicFeedforwardParameters(0.00015, 0.00005, 0.0);
 
     public static double HOOD_INCREMENT = 0.05;
     public static double RPM_INCREMENT = 100.0;
@@ -109,7 +109,7 @@ public class Shooter implements Subsystem {
         if (mode == Mode.odometry) {
             HOOD_ANGLE = getHoodAngle(GOAL_DISTANCE);
             if (Configuration.CURRENT_POSE.getY() < 36) {
-                Shooter.INSTANCE.setHoodAngle(43);
+                Shooter.INSTANCE.setHoodAngle(47.0);
             } else {
                 Shooter.INSTANCE.setHoodAngle(HOOD_ANGLE);
             }

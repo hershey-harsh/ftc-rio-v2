@@ -21,9 +21,9 @@ import static dev.nextftc.bindings.Bindings.*;
 
 import org.firstinspires.ftc.teamcode.Configuration;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
-import org.firstinspires.ftc.teamcode.subsystems.Light;
 import org.firstinspires.ftc.teamcode.subsystems.Limelight;
 
+@Deprecated
 @TeleOp(name = "Fusion Localizer", group = "Debug")
 public class FusionLocalizerDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;
@@ -41,8 +41,7 @@ public class FusionLocalizerDebug extends NextFTCOpMode {
         addComponents(
                 BindingsComponent.INSTANCE,
                 new PedroComponent(Constants::createFollower),
-                new SubsystemComponent(Limelight.INSTANCE),
-                new SubsystemComponent(Light.INSTANCE)
+                new SubsystemComponent(Limelight.INSTANCE)
         );
     }
 

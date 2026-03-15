@@ -30,7 +30,10 @@ public class Configuration {
     public static final Pose RED_GOAL_POSE = new Pose(144, 144);
     public static final Pose BLUE_GOAL_POSE = new Pose(0, 144);
     public static final Pose MANUAL_LOCALIZATION_POSE = new Pose(72, 72, Math.toRadians(270));
-    public static final Pose GATE_OPEN_RED = new Pose(132.965, 61.544, 32); // distance from center of goal to front of robot when lined up for a shot
+    public static final Pose RED_LOCALIZATION_POSE = new Pose(10.045999999999992, 10.703, Math.toRadians(180));
+    public static final Pose BLUE_LOCALIZATION_POSE = new Pose(133.954, 10.703, Math.toRadians(0));
+    public static final Pose GATE_OPEN_RED = new Pose(133.965, 62.1, Math.toRadians(30));
+    public static final Pose GATE_OPEN_BLUE = new Pose(84.703, 83.830, Math.toRadians(24.3));
     public static double X_GOAL_OFFSET = 0, Y_GOAL_OFFSET = 0, TURRET_OFFSET = 0;
 
     public static void setAimPointOffset(double xOffset, double yOffset) {
@@ -42,7 +45,7 @@ public class Configuration {
     public static double SHOOTER_HEIGHT_TO_GOAL = 0.95;
     public static double VELOCITY_COMPENSATION_WEIGHT = 0.3; // how much to adjust hood angle based on shooter wheel velocity
     public static double RPM_MULTIPLER = 2; // adjust this to fine-tune shooter wheel RPM without changing the LUT
-    public static double SHOOTER_TIME = 0.6;
+    public static double SHOOTER_TIME = 0.5;
 
 
     public static int RED_LIMELIGHT_PIPELINE = 2;

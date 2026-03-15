@@ -17,6 +17,7 @@ import dev.nextftc.ftc.NextFTCOpMode;
 import org.firstinspires.ftc.teamcode.Configuration;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 
+@Deprecated
 @Autonomous(name = "Path Skip Debug", group = "Debug")
 public class PathSkipDebug extends NextFTCOpMode {
 

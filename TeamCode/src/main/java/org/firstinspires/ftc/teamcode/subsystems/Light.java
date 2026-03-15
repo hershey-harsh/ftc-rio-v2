@@ -32,6 +32,8 @@ public class Light implements Subsystem {
     public static final double SAGE = 0.444, GREEN = 0.5, AZURE = 0.555, BLUE = 0.611;
     public static final double INDIGO = 0.666, VIOLET = 0.722, WHITE = 1.0;
 
+
+
     public enum Target {
         ROBOT,
         TURRET,
@@ -45,13 +47,13 @@ public class Light implements Subsystem {
         robotLight = new ServoEx(ActiveOpMode.hardwareMap().get(Servo.class, Configuration.ROBOT_LIGHT));
         turretLight = new ServoEx(ActiveOpMode.hardwareMap().get(Servo.class, Configuration.TURRET_LIGHT));
 
-        ROBOT_COLOR = WHITE;
+        ROBOT_COLOR = GREEN;
         ROBOT_INTERVAL = 0;
         ROBOT_BLINK_ON = true;
         ROBOT_BLINK_COUNT = 0;
         ROBOT_BLINK_AMOUNT = -1;
 
-        TURRET_COLOR = WHITE;
+        TURRET_COLOR = GREEN;
         TURRET_INTERVAL = 0;
         TURRET_BLINK_ON = true;
         TURRET_BLINK_COUNT = 0;

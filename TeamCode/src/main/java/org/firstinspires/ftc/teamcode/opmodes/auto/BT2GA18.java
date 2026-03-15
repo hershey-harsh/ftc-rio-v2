@@ -82,6 +82,8 @@ public class BT2GA18 extends NextFTCOpMode {
     @Override
     public void onStartButtonPressed() {
 
+        Shooter.INSTANCE.on().schedule();
+
         new SequentialGroup(
                 // Launch Preload
                 new ParallelGroup(
@@ -108,7 +110,7 @@ public class BT2GA18 extends NextFTCOpMode {
 
                 // Gate cycle 2
                 new FollowPath(paths.GateOpenCollect2),
-                new Delay(2),
+                new Delay(1.5),
                 new FollowPath(paths.GateLaunch2),
                 Transfer.INSTANCE.openGate(),
                 new Delay(Configuration.SHOOTER_TIME),
@@ -116,7 +118,7 @@ public class BT2GA18 extends NextFTCOpMode {
 
                 // Gate cycle 3
                 new FollowPath(paths.GateOpenCollect3),
-                new Delay(2),
+                new Delay(1.5),
                 new FollowPath(paths.GateLaunch3),
                 Transfer.INSTANCE.openGate(),
                 new Delay(Configuration.SHOOTER_TIME),
@@ -173,7 +175,7 @@ public class BT2GA18 extends NextFTCOpMode {
 
 //            double oo = Math.atan((-vxr) / vn);
 //
-        Configuration.TURRET_OFFSET = 0;
+        Configuration.TURRET_OFFSET = 2;
         Shooter.INSTANCE.updateKinematics(
                 Shooter.INSTANCE.GOAL_DISTANCE,
                 Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
@@ -217,7 +219,7 @@ public class BT2GA18 extends NextFTCOpMode {
         public Paths(Follower follower) {
             LaunchPreload = follower.pathBuilder().addPath(
                     new BezierLine(
-                            new Pose(32.248, 134.708),
+                            new Pose(33.101, 135.821),
                             new Pose(55.882, 83.840)
                     )
             ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(138))
@@ -227,16 +229,18 @@ public class BT2GA18 extends NextFTCOpMode {
                     .addPath(
                             new BezierCurve(
                                     new Pose(55.882, 83.840),
-                                    new Pose(48.250, 53.703), new Pose(47.266, 60.651), new Pose(40.234, 60.098),
-                                    new Pose(8.613, 59.057)
+                                    new Pose(48.250, 53.703),
+                                    new Pose(47.266, 60.651),
+                                    new Pose(40.234, 60.098),
+                                    new Pose(10.613, 59.057)
                             )
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(135), Math.toRadians(180))
                     .addPath(
                             new BezierCurve(
-                                    new Pose(8.613, 59.057),
+                                    new Pose(10.613, 59.057),
                                     new Pose(42.286, 61.227),
-                                    new Pose(56.168, 83.992)
+                                    new Pose(57.168, 83.992)
                             )
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(138))
@@ -244,70 +248,70 @@ public class BT2GA18 extends NextFTCOpMode {
 
             GateOpenCollect1 = follower.pathBuilder().addPath(
                     new BezierCurve(
-                            new Pose(56.168, 83.992),
+                            new Pose(57.168, 83.992),
                             new Pose(51.512, 57.326),
-                            new Pose(11.100, 60.485)
+                            new Pose(10.035-1.2, 62.100)
                     )
-            ).setLinearHeadingInterpolation(Math.toRadians(138), Math.toRadians(148))
+            ).setLinearHeadingInterpolation(Math.toRadians(138), Math.toRadians(152))
                     .build();
 
             GateLaunch1 = follower.pathBuilder().addPath(
                     new BezierCurve(
-                            new Pose(11.100, 60.485),
+                            new Pose(10.035-1.2, 62.100),
                             new Pose(42.286, 61.227),
                             new Pose(56.168, 83.992)
                     )
-            ).setLinearHeadingInterpolation(Math.toRadians(148), Math.toRadians(138))
+            ).setLinearHeadingInterpolation(Math.toRadians(152), Math.toRadians(138))
                     .build();
 
             GateOpenCollect2 = follower.pathBuilder().addPath(
                     new BezierCurve(
                             new Pose(56.168, 83.992),
                             new Pose(51.512, 57.326),
-                            new Pose(11.100, 60.485)
+                            new Pose(10.035-1.2, 62.100)
                     )
-            ).setLinearHeadingInterpolation(Math.toRadians(138), Math.toRadians(148))
+            ).setLinearHeadingInterpolation(Math.toRadians(138), Math.toRadians(152))
                     .build();
 
             GateLaunch2 = follower.pathBuilder().addPath(
                     new BezierCurve(
-                            new Pose(11.100, 60.485),
+                            new Pose(10.035-1, 62.100),
                             new Pose(42.286, 61.227),
                             new Pose(56.168, 83.992)
                     )
-            ).setLinearHeadingInterpolation(Math.toRadians(148), Math.toRadians(138))
+            ).setLinearHeadingInterpolation(Math.toRadians(152), Math.toRadians(138))
                     .build();
 
             GateOpenCollect3 = follower.pathBuilder().addPath(
                     new BezierCurve(
                             new Pose(56.168, 83.992),
                             new Pose(51.512, 57.326),
-                            new Pose(11.100, 60.485)
+                            new Pose(10.035-1.2, 62.100)
                     )
-            ).setLinearHeadingInterpolation(Math.toRadians(138), Math.toRadians(148))
+            ).setLinearHeadingInterpolation(Math.toRadians(138), Math.toRadians(152))
                     .build();
 
             GateLaunch3 = follower.pathBuilder().addPath(
                     new BezierCurve(
-                            new Pose(11.100, 60.485),
+                            new Pose(10.035-1.2, 62.100),
                             new Pose(42.286, 61.227),
                             new Pose(55.412, 83.992)
                     )
-            ).setLinearHeadingInterpolation(Math.toRadians(148), Math.toRadians(180))
+            ).setLinearHeadingInterpolation(Math.toRadians(152), Math.toRadians(180))
                     .build();
 
             R1 = follower.pathBuilder()
                     .addPath(
                             new BezierLine(
                                     new Pose(55.412, 83.992),
-                                    new Pose(14.454, 83.723)
+                                    new Pose(23.763, 83.723)
                             )
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
                     .addPath(
                             new BezierLine(
-                                    new Pose(14.454, 83.723),
-                                    new Pose(57.363, 101.521)
+                                    new Pose(23.763, 83.723),
+                                    new Pose(58.672, 102.393)
                             )
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(140))

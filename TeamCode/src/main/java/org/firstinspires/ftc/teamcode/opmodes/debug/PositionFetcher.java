@@ -22,6 +22,7 @@ import org.firstinspires.ftc.teamcode.Configuration;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 
+@Deprecated
 @TeleOp(name = "Position Fetcher (Debug)", group = "Debug")
 public class PositionFetcher extends NextFTCOpMode {
     double LOOP_TIME = 0;

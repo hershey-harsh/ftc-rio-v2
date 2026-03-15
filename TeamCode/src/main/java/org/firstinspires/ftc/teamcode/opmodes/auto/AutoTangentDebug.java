@@ -23,6 +23,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
+@Deprecated
 @Autonomous(name = "RT", group = "Red Alliance")
 public class AutoTangentDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;

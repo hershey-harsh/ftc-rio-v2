@@ -25,6 +25,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
+@Deprecated
 @TeleOp(name = "Teleop Debug", group = "Debug")
 public class Competition extends NextFTCOpMode {
     private double X_VELOCITY = 0;

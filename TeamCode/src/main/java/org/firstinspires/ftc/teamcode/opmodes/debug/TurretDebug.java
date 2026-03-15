@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
+@Deprecated
 @TeleOp(name = "Turret", group = "Debug")
 public class TurretDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;

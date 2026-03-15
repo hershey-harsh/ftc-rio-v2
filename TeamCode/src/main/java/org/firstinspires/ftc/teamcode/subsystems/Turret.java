@@ -26,7 +26,6 @@ public class Turret implements Subsystem {
 
     public double HEADING_DEGREE = 0, TARGET_DEGREE = 0, ODO_TARGET = 0, TURRET_POSITION = 0, TURRET_ANGLE = 0, TRUE_TARGET_DEGREE, ERROR = 0;
 
-    private double CURRENT_LIGHT_COLOR = -1;
 
     public Mode mode = Mode.odometry;
 
@@ -73,23 +72,6 @@ public class Turret implements Subsystem {
         } else if (mode == Mode.manual) {
             setAngle(TARGET_DEGREE + Configuration.TURRET_OFFSET);
         }
-
-        double normalizedAngle = AngleUnit.normalizeDegrees(TARGET_DEGREE + Configuration.TURRET_OFFSET);
-        double angularError = Math.abs(AngleUnit.normalizeDegrees(TURRET_ANGLE - TRUE_TARGET_DEGREE));
-
-        double desiredColor;
-        if (normalizedAngle > 165 || normalizedAngle < -155) {
-            desiredColor = Light.VIOLET;
-        } else if (angularError <= 2.0) {
-            desiredColor = Light.GREEN;
-        } else {
-            desiredColor = Light.BLUE;
-        }
-
-        if (desiredColor != CURRENT_LIGHT_COLOR) {
-            CURRENT_LIGHT_COLOR = desiredColor;
-            Light.INSTANCE.setColor(desiredColor, Light.Target.TURRET).schedule();
-        }
     }
 
     private void setAngle(double angle) {
@@ -110,8 +92,12 @@ public class Turret implements Subsystem {
 
         if (result > 0.750) {
             result = 0.750;
+            Light.INSTANCE.setColor(Light.RED, Light.Target.TURRET).schedule();
         } else if (result < 0.246) {
+            Light.INSTANCE.setColor(Light.RED, Light.Target.TURRET).schedule();
             result = 0.246;
+        } else {
+            Light.INSTANCE.setColor(Light.GREEN, Light.Target.TURRET).schedule();
         }
 
         return result;
@@ -164,6 +150,12 @@ public class Turret implements Subsystem {
             } else if (TARGET_DEGREE < -155) {
                 TARGET_DEGREE = -155;
             }
+        });
+    }
+
+    public Command resetAngle() {
+        return new InstantCommand(() -> {
+            TARGET_DEGREE = 0;
         });
     }
 

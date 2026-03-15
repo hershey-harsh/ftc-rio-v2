@@ -11,6 +11,7 @@ import dev.nextftc.ftc.NextFTCOpMode;
 import static dev.nextftc.bindings.Bindings.*;
 import org.firstinspires.ftc.teamcode.subsystems.Light;
 
+@Deprecated
 @TeleOp(name = "Light", group = "Debug")
 public class LightDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;

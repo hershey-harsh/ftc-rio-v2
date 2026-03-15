@@ -18,6 +18,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
+@Deprecated
 @TeleOp(name = "Rushed")
 public class Rushed extends NextFTCOpMode {
     private double X_VELOCITY = 0;
