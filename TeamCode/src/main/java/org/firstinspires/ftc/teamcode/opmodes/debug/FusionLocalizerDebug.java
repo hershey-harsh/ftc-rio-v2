@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.debug;
 
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -23,7 +24,6 @@ import org.firstinspires.ftc.teamcode.Configuration;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Limelight;
 
-@Deprecated
 @TeleOp(name = "Fusion Localizer", group = "Debug")
 public class FusionLocalizerDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;
@@ -40,7 +40,7 @@ public class FusionLocalizerDebug extends NextFTCOpMode {
     public FusionLocalizerDebug() {
         addComponents(
                 BindingsComponent.INSTANCE,
-                new PedroComponent(Constants::createFollower),
+                new PedroComponent(Constants::createFusionFollower),
                 new SubsystemComponent(Limelight.INSTANCE)
         );
     }

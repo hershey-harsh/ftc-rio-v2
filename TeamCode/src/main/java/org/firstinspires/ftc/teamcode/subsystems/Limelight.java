@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.pedropathing.ftc.InvertedFTCCoordinates;
-import com.pedropathing.ftc.PoseConverter;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
@@ -13,8 +12,6 @@ import dev.nextftc.core.subsystems.Subsystem;
 import dev.nextftc.ftc.ActiveOpMode;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.Configuration;
 
@@ -27,11 +24,11 @@ public class Limelight implements Subsystem {
     private int pipeline;
     public boolean autoUpdateEnabled = true;
 
-    // Limelight position relative to robot center when turret angle = 0.
+    // Limelight position relative to robot center when turret angle = 0 (in inches).
     // Positive X = forward, Positive Y = left/right depending on your field coord setup.
     // Tune these to match your robot.
-    public static double LIMELIGHT_OFFSET_X_METERS = 0.0;
-    public static double LIMELIGHT_OFFSET_Y_METERS = 0.0;
+    public static double LIMELIGHT_OFFSET_X_INCHES = 0.0;
+    public static double LIMELIGHT_OFFSET_Y_INCHES = 0.0;
 
     // Extra fixed angular offset if camera is not perfectly aligned with turret zero
     public static double LIMELIGHT_TURRET_YAW_OFFSET_DEG = 0.0;
@@ -77,7 +74,7 @@ public class Limelight implements Subsystem {
     }
 
     private void updateLocalization() {
-        // Feed robot orientation for MegaTag 2
+        // Feed robot orientation + turret angle for MegaTag 2
         double robotHeadingDeg = Math.toDegrees(Configuration.CURRENT_POSE.getHeading());
         double turretDeg = Turret.INSTANCE.TURRET_ANGLE + LIMELIGHT_TURRET_YAW_OFFSET_DEG;
         limelight.updateRobotOrientation(robotHeadingDeg + turretDeg);
@@ -96,42 +93,34 @@ public class Limelight implements Subsystem {
             if (botpose3D != null) {
                 lastRawBotpose = botpose3D;
 
-                // Raw Limelight pose (this is effectively the camera/turret pose)
-                double camX = botpose3D.getPosition().x;
-                double camY = botpose3D.getPosition().y;
-                double camYawDeg = botpose3D.getOrientation().getYaw();
+                // Convert Limelight meters to inches
+                double xInches = botpose3D.getPosition().x * 39.3701;
+                double yInches = botpose3D.getPosition().y * 39.3701;
+                double yawRad = botpose3D.getOrientation().getYaw(AngleUnit.RADIANS) + Math.PI / 2;
 
-                // Turret angle relative to robot
+                // Account for turret-mounted camera offset
                 double turretRad = Math.toRadians(turretDeg);
-
-                // Rotate the camera offset by turret angle
                 double rotatedOffsetX =
-                        LIMELIGHT_OFFSET_X_METERS * Math.cos(turretRad)
-                                - LIMELIGHT_OFFSET_Y_METERS * Math.sin(turretRad);
-
+                        LIMELIGHT_OFFSET_X_INCHES * Math.cos(turretRad)
+                                - LIMELIGHT_OFFSET_Y_INCHES * Math.sin(turretRad);
                 double rotatedOffsetY =
-                        LIMELIGHT_OFFSET_X_METERS * Math.sin(turretRad)
-                                + LIMELIGHT_OFFSET_Y_METERS * Math.cos(turretRad);
+                        LIMELIGHT_OFFSET_X_INCHES * Math.sin(turretRad)
+                                + LIMELIGHT_OFFSET_Y_INCHES * Math.cos(turretRad);
 
-                // Convert camera pose -> robot pose
-                double robotX = camX - rotatedOffsetX;
-                double robotY = camY - rotatedOffsetY;
-                double robotYawDeg = normalizeDegrees(camYawDeg - turretDeg);
+                double robotX = xInches - rotatedOffsetX;
+                double robotY = yInches - rotatedOffsetY;
 
                 lastCorrectedX = robotX;
                 lastCorrectedY = robotY;
-                lastCorrectedHeadingDeg = robotYawDeg;
+                lastCorrectedHeadingDeg = Math.toDegrees(yawRad);
 
-                Pose2D correctedBotpose2D = new Pose2D(
-                        DistanceUnit.METER,
+                Pose pedroPose = new Pose(
                         robotX,
                         robotY,
-                        AngleUnit.DEGREES,
-                        robotYawDeg
-                );
+                        yawRad,
+                        InvertedFTCCoordinates.INSTANCE
+                ).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
 
-                Pose ftcPose = PoseConverter.pose2DToPose(correctedBotpose2D, InvertedFTCCoordinates.INSTANCE);
-                Pose pedroPose = ftcPose.getAsCoordinateSystem(PedroCoordinates.INSTANCE);
                 lastPedroPose = pedroPose;
 
                 long timestamp = System.nanoTime() - limelightResult.getStaleness();

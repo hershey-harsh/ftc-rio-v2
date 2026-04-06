@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.debug;
 
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -19,7 +20,7 @@ import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
-@Deprecated
+@Disabled
 @TeleOp(name = "Turret", group = "Debug")
 public class TurretDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;

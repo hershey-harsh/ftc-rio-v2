@@ -52,6 +52,7 @@ public class RedCompetition extends NextFTCOpMode {
     private boolean gamepad2Override = false;
     private boolean automatedDrive = false;
     private Supplier<PathChain> gateOpenPath;
+    private Supplier<PathChain> parkPath;
 
 
     public RedCompetition() {
@@ -73,8 +74,14 @@ public class RedCompetition extends NextFTCOpMode {
         backLeftMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         backRightMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-        PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
+//        PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
+
+        PedroComponent.follower().setStartingPose(new com.pedropathing.geometry.Pose(72, 72, Math.toRadians(270)));
+
+        Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
+
         Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.1;
+        Configuration.ALLIANCE = Configuration.Alliance.RED;
     }
 
     @Override
@@ -96,6 +103,23 @@ public class RedCompetition extends NextFTCOpMode {
             Pose target = Configuration.ALLIANCE == Configuration.Alliance.BLUE
                     ? Configuration.GATE_OPEN_BLUE
                     : Configuration.GATE_OPEN_RED;
+            return PedroComponent.follower().pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                PedroComponent.follower().getPose(),
+                                target
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        PedroComponent.follower().getPose().getHeading(),
+                        target.getHeading()
+                )
+                .build();
+        };
+
+        // Lazy path — built from the robot's current pose at the moment the button is pressed
+        parkPath = () -> {
+            Pose target = Configuration.RED_PARK_BR;
             return PedroComponent.follower().pathBuilder()
                 .addPath(
                         new BezierLine(
@@ -135,8 +159,10 @@ public class RedCompetition extends NextFTCOpMode {
         // D-Pad Up → Automated drive to gate open position
         button(() -> gamepad1.dpad_up)
                 .whenBecomesTrue(() -> {
-                    driverControlled.cancel();
-                    new FollowPath(gateOpenPath.get()).schedule();
+                    // Don't cancel driverControlled — the deferred cancel would call
+                    // breakFollowing() AFTER followPath(), destroying the path.
+                    // followPath() sets manualDrive=false so teleop vectors are ignored.
+                    PedroComponent.follower().followPath(gateOpenPath.get());
                     automatedDrive = true;
                 });
 
@@ -145,9 +171,16 @@ public class RedCompetition extends NextFTCOpMode {
                 .whenBecomesTrue(() -> {
                     if (automatedDrive) {
                         PedroComponent.follower().breakFollowing();
+                        PedroComponent.follower().startTeleopDrive();
                         automatedDrive = false;
-                        driverControlled.schedule();
                     }
+                });
+
+        // D-Pad Right → Automated drive to park position
+        button(() -> gamepad1.dpad_right)
+                .whenBecomesTrue(() -> {
+                    PedroComponent.follower().followPath(parkPath.get());
+                    automatedDrive = true;
                 });
 
         // X (Red) → Red Alliance Override
@@ -248,7 +281,7 @@ public class RedCompetition extends NextFTCOpMode {
         // Stop automated path following when done or driver takes over
         if (automatedDrive && !PedroComponent.follower().isBusy()) {
             automatedDrive = false;
-            driverControlled.schedule();
+            PedroComponent.follower().startTeleopDrive();
         }
 
         telemetry.addData("Loop Time (ms)", LOOP_TIME);
@@ -268,6 +301,12 @@ public class RedCompetition extends NextFTCOpMode {
         telemetry.addData("G12 Transitions", Transfer.INSTANCE.gate12TransitionCount);
         telemetry.addData("G12 Ball", Transfer.INSTANCE.GATE12_BALL_PRESENT);
         telemetry.addData("All Motors Off", Transfer.INSTANCE.ALL_STOPPED);
+
+        // Distance sensor telemetry
+        telemetry.addData("Goal Distance (m)", Shooter.INSTANCE.GOAL_DISTANCE);
+        telemetry.addData("Pose X", Configuration.CURRENT_POSE.getX());
+        telemetry.addData("Pose Y", Configuration.CURRENT_POSE.getY());
+        telemetry.addData("Heading (deg)", Math.toDegrees(Configuration.CURRENT_POSE.getHeading()));
 
 //        // AprilTag / Limelight Position
 //        if (Limelight.INSTANCE.lastPedroPose != null) {
@@ -291,7 +330,7 @@ public class RedCompetition extends NextFTCOpMode {
         if (Shooter.INSTANCE.mode == Shooter.Mode.odometry) {
             if (Configuration.CURRENT_POSE.getY() < 36) {
                 Configuration.setAimPointOffset(0, 0);
-                Shooter.INSTANCE.TARGET_RPM = 5100;
+                Shooter.INSTANCE.TARGET_RPM = 4300;
                 Configuration.TURRET_OFFSET = 0;
             } else {
                 X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
@@ -331,7 +370,7 @@ public class RedCompetition extends NextFTCOpMode {
                 double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
                 double vt = Math.sqrt((vn * vn) + (vxr * vxr));
 //
-                Configuration.TURRET_OFFSET = Configuration.ALLIANCE == Configuration.Alliance.BLUE ? 2 : -2;
+                Configuration.TURRET_OFFSET = Configuration.ALLIANCE == Configuration.Alliance.BLUE ? 0.5 : -0.5;
                 Shooter.INSTANCE.updateKinematics(
                         Shooter.INSTANCE.GOAL_DISTANCE,
                         Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)

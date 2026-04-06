@@ -32,8 +32,10 @@ public class Configuration {
     public static final Pose MANUAL_LOCALIZATION_POSE = new Pose(72, 72, Math.toRadians(270));
     public static final Pose RED_LOCALIZATION_POSE = new Pose(10.045999999999992, 10.703, Math.toRadians(180));
     public static final Pose BLUE_LOCALIZATION_POSE = new Pose(133.954, 10.703, Math.toRadians(0));
-    public static final Pose GATE_OPEN_RED = new Pose(133.965, 62.1, Math.toRadians(30));
+    public static final Pose GATE_OPEN_RED = new Pose(131.752, 62.388, Math.toRadians(23.19));
     public static final Pose GATE_OPEN_BLUE = new Pose(84.703, 83.830, Math.toRadians(24.3));
+    public static final Pose RED_PARK_BR = new Pose(39.70909090909092, 32.29090909090909, Math.toRadians(90));
+    public static final Pose RED_LAUNCH = new Pose(39.70909090909092, 32.29090909090909, Math.toRadians(90));
     public static double X_GOAL_OFFSET = 0, Y_GOAL_OFFSET = 0, TURRET_OFFSET = 0;
 
     public static void setAimPointOffset(double xOffset, double yOffset) {

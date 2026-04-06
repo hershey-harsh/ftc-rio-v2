@@ -243,7 +243,7 @@ public class BT2GA18 extends NextFTCOpMode {
                                     new Pose(57.168, 83.992)
                             )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(138))
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(136))
                     .build();
 
             GateOpenCollect1 = follower.pathBuilder().addPath(
@@ -252,7 +252,7 @@ public class BT2GA18 extends NextFTCOpMode {
                             new Pose(51.512, 57.326),
                             new Pose(10.035-1.2, 62.100)
                     )
-            ).setLinearHeadingInterpolation(Math.toRadians(138), Math.toRadians(152))
+            ).setLinearHeadingInterpolation(Math.toRadians(136), Math.toRadians(152))
                     .build();
 
             GateLaunch1 = follower.pathBuilder().addPath(
@@ -261,7 +261,7 @@ public class BT2GA18 extends NextFTCOpMode {
                             new Pose(42.286, 61.227),
                             new Pose(56.168, 83.992)
                     )
-            ).setLinearHeadingInterpolation(Math.toRadians(152), Math.toRadians(138))
+            ).setLinearHeadingInterpolation(Math.toRadians(152), Math.toRadians(136))
                     .build();
 
             GateOpenCollect2 = follower.pathBuilder().addPath(
@@ -270,16 +270,16 @@ public class BT2GA18 extends NextFTCOpMode {
                             new Pose(51.512, 57.326),
                             new Pose(10.035-1.2, 62.100)
                     )
-            ).setLinearHeadingInterpolation(Math.toRadians(138), Math.toRadians(152))
+            ).setLinearHeadingInterpolation(Math.toRadians(136), Math.toRadians(152))
                     .build();
 
             GateLaunch2 = follower.pathBuilder().addPath(
                     new BezierCurve(
-                            new Pose(10.035-1, 62.100),
+                            new Pose(10.035-1.2, 62.100),
                             new Pose(42.286, 61.227),
                             new Pose(56.168, 83.992)
                     )
-            ).setLinearHeadingInterpolation(Math.toRadians(152), Math.toRadians(138))
+            ).setLinearHeadingInterpolation(Math.toRadians(152), Math.toRadians(136))
                     .build();
 
             GateOpenCollect3 = follower.pathBuilder().addPath(
@@ -288,7 +288,7 @@ public class BT2GA18 extends NextFTCOpMode {
                             new Pose(51.512, 57.326),
                             new Pose(10.035-1.2, 62.100)
                     )
-            ).setLinearHeadingInterpolation(Math.toRadians(138), Math.toRadians(152))
+            ).setLinearHeadingInterpolation(Math.toRadians(136), Math.toRadians(152))
                     .build();
 
             GateLaunch3 = follower.pathBuilder().addPath(

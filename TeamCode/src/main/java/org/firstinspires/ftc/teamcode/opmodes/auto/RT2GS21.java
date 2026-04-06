@@ -6,6 +6,7 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import dev.nextftc.core.commands.groups.ParallelGroup;
@@ -23,6 +24,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
+@Disabled
 @Autonomous(name = "RT2GS21 - All", group = "Red Alliance")
 public class RT2GS21 extends NextFTCOpMode {
     double LOOP_TIME = 0;
@@ -270,7 +272,7 @@ public class RT2GS21 extends NextFTCOpMode {
                     .setLinearHeadingInterpolation(Math.toRadians(-90), Math.toRadians(0))
                     .addPath(new BezierLine(
                             new Pose(129.909, 35.182),
-                            new Pose(84.673, 84.055)
+                            new Pose(90.12818945760118, 109.37524828113058)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(-50), Math.toRadians(-50))
                     .setReversed()

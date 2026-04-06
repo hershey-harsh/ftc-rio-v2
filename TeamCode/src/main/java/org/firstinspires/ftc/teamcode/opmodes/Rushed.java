@@ -1,4 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmodes;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -18,7 +19,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
-@Deprecated
+@Disabled
 @TeleOp(name = "Rushed")
 public class Rushed extends NextFTCOpMode {
     private double X_VELOCITY = 0;
@@ -49,7 +50,13 @@ public class Rushed extends NextFTCOpMode {
         Gamepads.gamepad1().leftStickX();
         Gamepads.gamepad1().rightStickX();
 
-        PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
+//        PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
+        PedroComponent.follower().setStartingPose(new com.pedropathing.geometry.Pose(72, 72, Math.toRadians(270)));
+
+        Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
+
+        Configuration.ALLIANCE = Configuration.Alliance.RED;
+
 
         // Close gate on init
         Shooter.INSTANCE.off().schedule();

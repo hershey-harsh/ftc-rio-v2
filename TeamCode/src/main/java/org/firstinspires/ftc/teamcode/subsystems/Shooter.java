@@ -109,7 +109,7 @@ public class Shooter implements Subsystem {
         if (mode == Mode.odometry) {
             HOOD_ANGLE = getHoodAngle(GOAL_DISTANCE);
             if (Configuration.CURRENT_POSE.getY() < 36) {
-                Shooter.INSTANCE.setHoodAngle(47.0);
+                Shooter.INSTANCE.setHoodAngle(46);
             } else {
                 Shooter.INSTANCE.setHoodAngle(HOOD_ANGLE);
             }

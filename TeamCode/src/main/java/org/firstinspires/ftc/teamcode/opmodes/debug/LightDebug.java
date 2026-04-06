@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmodes.debug;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -11,7 +12,7 @@ import dev.nextftc.ftc.NextFTCOpMode;
 import static dev.nextftc.bindings.Bindings.*;
 import org.firstinspires.ftc.teamcode.subsystems.Light;
 
-@Deprecated
+@Disabled
 @TeleOp(name = "Light", group = "Debug")
 public class LightDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;

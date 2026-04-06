@@ -49,20 +49,20 @@ public class Transfer implements Subsystem {
     public boolean GATE3_STOPPED = false;        // true after ball detected and motor stopped
     public boolean GATE3_BALL_PRESENT = false;   // latched: true = ball confirmed at gate 3
     private boolean STARTED = false;             // true after intake() is called — prevents running during init
-    private static final double GATE3_THRESHOLD = 6;  // cm
+    private static final double GATE3_THRESHOLD = 8;  // cm
 
     // Gate 1&2 break beam debounce — sensor is noisy when ball is present (toggles 3-4x in ~2s)
-    // We count rising edges (transitions from false→true) in a rolling window.
-    // If we see enough edges within the window, we latch GATE12_BALL_PRESENT = true.
+    // count rising edges (transitions from false→true) in a rolling window.
+    // If see enough edges within the window latch GATE12_BALL_PRESENT = true.
     // The latch is only cleared when the gate is opened (ball leaves).
     private boolean gate12LastRawState = false;    // previous raw sensor reading
     public int gate12TransitionCount = 0;          // number of falling edges in current window
     private final ElapsedTime gate12WindowTimer = new ElapsedTime(); // rolling window timer
     public boolean GATE12_BALL_PRESENT = false;   // latched: true = ball confirmed at gate 1&2
-    private static final double GATE12_DEBOUNCE_WINDOW = 2.0;  // seconds — window to count transitions
+    private static final double GATE12_DEBOUNCE_WINDOW = 3.0;  // seconds window to count transitions
     private static final int GATE12_DEBOUNCE_THRESHOLD = 3;    // transitions needed to confirm ball
 
-    // All-full auto-stop: both gate3 AND gate1And2 latched full
+    // All full auto-stop: both gate3 AND gate1And2 latched full (method cooked i think)
     public boolean ALL_STOPPED = false;          // true after both sensors full — all motors stopped
 
     @Override

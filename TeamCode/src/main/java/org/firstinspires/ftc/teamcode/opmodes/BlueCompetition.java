@@ -75,6 +75,7 @@ public class BlueCompetition extends NextFTCOpMode {
 
         PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
         Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.1;
+        Configuration.ALLIANCE = Configuration.Alliance.BLUE;
     }
 
     @Override
@@ -135,8 +136,7 @@ public class BlueCompetition extends NextFTCOpMode {
         // D-Pad Up → Automated drive to gate open position
         button(() -> gamepad1.dpad_up)
                 .whenBecomesTrue(() -> {
-                    driverControlled.cancel();
-                    new FollowPath(gateOpenPath.get()).schedule();
+                    PedroComponent.follower().followPath(gateOpenPath.get());
                     automatedDrive = true;
                 });
 
@@ -145,8 +145,8 @@ public class BlueCompetition extends NextFTCOpMode {
                 .whenBecomesTrue(() -> {
                     if (automatedDrive) {
                         PedroComponent.follower().breakFollowing();
+                        PedroComponent.follower().startTeleopDrive();
                         automatedDrive = false;
-                        driverControlled.schedule();
                     }
                 });
 
@@ -248,7 +248,7 @@ public class BlueCompetition extends NextFTCOpMode {
         // Stop automated path following when done or driver takes over
         if (automatedDrive && !PedroComponent.follower().isBusy()) {
             automatedDrive = false;
-            driverControlled.schedule();
+            PedroComponent.follower().startTeleopDrive();
         }
 
         telemetry.addData("Loop Time (ms)", LOOP_TIME);
@@ -291,7 +291,7 @@ public class BlueCompetition extends NextFTCOpMode {
         if (Shooter.INSTANCE.mode == Shooter.Mode.odometry) {
             if (Configuration.CURRENT_POSE.getY() < 36) {
                 Configuration.setAimPointOffset(0, 0);
-                Shooter.INSTANCE.TARGET_RPM = 5100;
+                Shooter.INSTANCE.TARGET_RPM = 4300;
                 Configuration.TURRET_OFFSET = 0;
             } else {
                 X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
@@ -331,7 +331,7 @@ public class BlueCompetition extends NextFTCOpMode {
                 double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
                 double vt = Math.sqrt((vn * vn) + (vxr * vxr));
 //
-                Configuration.TURRET_OFFSET = Configuration.ALLIANCE == Configuration.Alliance.BLUE ? 2 : -2;
+                Configuration.TURRET_OFFSET = Configuration.ALLIANCE == Configuration.Alliance.BLUE ? 1 : -1;
                 Shooter.INSTANCE.updateKinematics(
                         Shooter.INSTANCE.GOAL_DISTANCE,
                         Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
