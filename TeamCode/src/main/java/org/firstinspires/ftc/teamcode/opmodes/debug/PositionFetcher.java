@@ -27,9 +27,13 @@ import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 public class PositionFetcher extends NextFTCOpMode {
     double LOOP_TIME = 0;
     ElapsedTime LOOP_TIMER = new ElapsedTime();
-    private static final double START_X = 72;
-    private static final double START_Y = 72;
-    private static final double START_HEADING = 270;
+//    private static final double START_X = 72;
+//    private static final double START_Y = 72;
+//    private static final double START_HEADING = 270;
+
+    private static final double START_X = 26.700;
+    private static final double START_Y = 128.200;
+    private static final double START_HEADING = 135;
 
     // Saved positions list
     private final List<Pose> savedPositions = new ArrayList<>();

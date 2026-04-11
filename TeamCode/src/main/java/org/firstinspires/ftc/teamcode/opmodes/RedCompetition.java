@@ -58,9 +58,9 @@ public class RedCompetition extends NextFTCOpMode {
     public RedCompetition() {
         addComponents(
                 BindingsComponent.INSTANCE,
-                new PedroComponent(Constants::createFollower),
+                new PedroComponent(Constants::createFusionFollower),
                 new SubsystemComponent(Light.INSTANCE),
-//                new SubsystemComponent(Limelight.INSTANCE),
+                new SubsystemComponent(Limelight.INSTANCE),
                 new SubsystemComponent(Shooter.INSTANCE),
                 new SubsystemComponent(Transfer.INSTANCE),
                 new SubsystemComponent(Turret.INSTANCE)
@@ -82,6 +82,8 @@ public class RedCompetition extends NextFTCOpMode {
 
         Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.1;
         Configuration.ALLIANCE = Configuration.Alliance.RED;
+
+        Limelight.INSTANCE.MODE = Limelight.Mode.LOCALIZATION;
     }
 
     @Override
@@ -254,31 +256,26 @@ public class RedCompetition extends NextFTCOpMode {
 //                    driverControlled.schedule();
 //                });
 
-        // B (Red) → Intake Off
+        // B → Intake Off
         button(() -> gamepad2.b)
                 .whenTrue(() -> Transfer.INSTANCE.stop().schedule());
 
-        // X (Red) → Intake On
+        // X → Intake On
         button(() -> gamepad2.x)
                 .whenTrue(() -> Transfer.INSTANCE.intake().schedule());
 
+        // Right Bumper → Gate Open while held, close when released
         button(() -> gamepad2.right_bumper)
                 .whenTrue(() -> Transfer.INSTANCE.openGate().schedule())
                 .whenBecomesFalse(() -> Transfer.INSTANCE.closeGate().schedule());
-
-        // Right Stick → Intake On (when stick is pushed past deadzone)
-        Range intakeRange = Gamepads.gamepad2().rightStickY()
-                .deadZone(0.3);
-        intakeRange
-                .asButton(value -> Math.abs(value) > 0)
-                .whenTrue(() -> Transfer.INSTANCE.intake().schedule());
     }
 
     @Override
     public void onUpdate() {
         LOOP_TIMER.reset();
 
-        // Stop automated path following when done or driver takes over
+        Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
+
         if (automatedDrive && !PedroComponent.follower().isBusy()) {
             automatedDrive = false;
             PedroComponent.follower().startTeleopDrive();
@@ -286,27 +283,33 @@ public class RedCompetition extends NextFTCOpMode {
 
         telemetry.addData("Loop Time (ms)", LOOP_TIME);
         telemetry.addData("Loop Time (hz)", (1000/LOOP_TIME));
-        telemetry.addData("Automated Drive", automatedDrive);
 
-        Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
+        telemetry.addData("X", Configuration.CURRENT_POSE.getX());
+        telemetry.addData("Y", Configuration.CURRENT_POSE.getY());
+        telemetry.addData("Z", Math.toDegrees(Configuration.CURRENT_POSE.getHeading()));
+
+
+
+//        telemetry.addData("Automated Drive", automatedDrive);
+
         BindingManager.update();
 
-        telemetry.addData("Drive Control", gamepad2Override ? "Gamepad 2" : "Gamepad 1");
-
-        // Gate sensor telemetry
-        telemetry.addData("Gate 3 Dist (cm)", Transfer.gate3Distance);
-        telemetry.addData("Gate 3 Ball", Transfer.INSTANCE.GATE3_BALL_PRESENT);
-        telemetry.addData("Gate 3 Motor Off", Transfer.INSTANCE.GATE3_STOPPED);
-        telemetry.addData("G12 Raw (true=clear)", Transfer.INSTANCE.gate1And2Sensor.getState());
-        telemetry.addData("G12 Transitions", Transfer.INSTANCE.gate12TransitionCount);
-        telemetry.addData("G12 Ball", Transfer.INSTANCE.GATE12_BALL_PRESENT);
-        telemetry.addData("All Motors Off", Transfer.INSTANCE.ALL_STOPPED);
-
-        // Distance sensor telemetry
-        telemetry.addData("Goal Distance (m)", Shooter.INSTANCE.GOAL_DISTANCE);
-        telemetry.addData("Pose X", Configuration.CURRENT_POSE.getX());
-        telemetry.addData("Pose Y", Configuration.CURRENT_POSE.getY());
-        telemetry.addData("Heading (deg)", Math.toDegrees(Configuration.CURRENT_POSE.getHeading()));
+//        telemetry.addData("Drive Control", gamepad2Override ? "Gamepad 2" : "Gamepad 1");
+//
+//        // Gate sensor telemetry
+//        telemetry.addData("Gate 3 Dist (cm)", Transfer.gate3Distance);
+//        telemetry.addData("Gate 3 Ball", Transfer.INSTANCE.GATE3_BALL_PRESENT);
+//        telemetry.addData("Gate 3 Motor Off", Transfer.INSTANCE.GATE3_STOPPED);
+//        telemetry.addData("G12 Raw (true=clear)", Transfer.INSTANCE.gate1And2Sensor.getState());
+//        telemetry.addData("G12 Transitions", Transfer.INSTANCE.gate12TransitionCount);
+//        telemetry.addData("G12 Ball", Transfer.INSTANCE.GATE12_BALL_PRESENT);
+//        telemetry.addData("All Motors Off", Transfer.INSTANCE.ALL_STOPPED);
+//
+//        // Distance sensor telemetry
+//        telemetry.addData("Goal Distance (m)", Shooter.INSTANCE.GOAL_DISTANCE);
+//        telemetry.addData("Pose X", Configuration.CURRENT_POSE.getX());
+//        telemetry.addData("Pose Y", Configuration.CURRENT_POSE.getY());
+//        telemetry.addData("Heading (deg)", Math.toDegrees(Configuration.CURRENT_POSE.getHeading()));
 
 //        // AprilTag / Limelight Position
 //        if (Limelight.INSTANCE.lastPedroPose != null) {
@@ -327,11 +330,11 @@ public class RedCompetition extends NextFTCOpMode {
 
         driverControlled.setScalar(Configuration.CONTROL_SCALE);
 
-        if (Shooter.INSTANCE.mode == Shooter.Mode.odometry) {
+        if (Shooter.INSTANCE.MODE == Shooter.Mode.ODOMETRY) {
             if (Configuration.CURRENT_POSE.getY() < 36) {
                 Configuration.setAimPointOffset(0, 0);
-                Shooter.INSTANCE.TARGET_RPM = 4300;
-                Configuration.TURRET_OFFSET = 0;
+                Shooter.INSTANCE.TARGET_RPM = 4100;
+                Configuration.TURRET_OFFSET = 2;
             } else {
                 X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
                 Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
@@ -369,13 +372,14 @@ public class RedCompetition extends NextFTCOpMode {
 
                 double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
                 double vt = Math.sqrt((vn * vn) + (vxr * vxr));
-//
+
                 Configuration.TURRET_OFFSET = Configuration.ALLIANCE == Configuration.Alliance.BLUE ? 0.5 : -0.5;
                 Shooter.INSTANCE.updateKinematics(
                         Shooter.INSTANCE.GOAL_DISTANCE,
                         Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
                 );
 
+                Configuration.TURRET_OFFSET = 0;
                 Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER;
             }
         }

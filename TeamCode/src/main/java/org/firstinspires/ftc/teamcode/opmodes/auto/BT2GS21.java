@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import dev.nextftc.core.commands.groups.ParallelGroup;
 import dev.nextftc.core.commands.groups.SequentialGroup;
 import dev.nextftc.core.commands.delays.Delay;
+import dev.nextftc.core.commands.utility.InstantCommand;
 import dev.nextftc.core.components.BindingsComponent;
 import dev.nextftc.core.components.SubsystemComponent;
 import dev.nextftc.extensions.pedro.FollowPath;
@@ -56,6 +57,7 @@ public class BT2GS21 extends NextFTCOpMode {
     public void onInit() {
         Configuration.ALLIANCE = Configuration.Alliance.BLUE;
         Configuration.SHOOTER_HEIGHT_TO_GOAL = 0.95;
+        Configuration.RPM_MULTIPLER = 1.95;
 
         paths = new Paths(PedroComponent.follower());
 
@@ -89,14 +91,8 @@ public class BT2GS21 extends NextFTCOpMode {
                 // TODO: All Path Chains are temporary fixes until Path Skipping is fixed through correction prioritization.
                 /// Launch Preloaded Artifacts.
 
-                new ParallelGroup(
-                        new FollowPath(paths.PreloadLaunch),
-                        new SequentialGroup(
-                                new Delay(1.65),
-                                Transfer.INSTANCE.openGate()
-                        )
-                ),
-
+                new FollowPath(paths.PreloadLaunch),
+                Transfer.INSTANCE.openGate(),
                 new Delay(0.5),
 
                 /// Wait 0.5 seconds and then collect R2 Artifacts and come back to launching position.
@@ -105,48 +101,70 @@ public class BT2GS21 extends NextFTCOpMode {
                         Transfer.INSTANCE.closeGate(),
                         new FollowPath(paths.R2),
                         new SequentialGroup(
-                                new Delay(7.2), //TODO: Measure how long it takes from Preload -> R2 Collect then + 1.2
+                                new Delay(2.5), //TODO: Measure how long it takes from Preload -> R2 Collect then + 1.2
                                 Transfer.INSTANCE.openGate()
                         )
                 ),
 
-                new Delay(0.5),
+                new Delay(0.25),
 
                 /// Wait 0.5 seconds and then collect G1 Artifacts and come back to launching position.
 
                 new ParallelGroup(
                         Transfer.INSTANCE.closeGate(),
-                        new FollowPath(paths.Gate1),
                         new SequentialGroup(
-                                new Delay(7.5), //TODO: Measure how long it takes from R2 Launch -> G1 Collect then + 1.5
-                                Transfer.INSTANCE.openGate()
+                                new InstantCommand(() -> Configuration.RPM_MULTIPLER = 2),
+                                new FollowPath(paths.Gate1_1),
+//                                new Delay(0.25),
+//                                new FollowPath(paths.Gate1_2),
+                                new Delay(1.25),
+                                new ParallelGroup(
+                                        new FollowPath(paths.Gate1_3),
+                                        new SequentialGroup(
+                                                new Delay(1), //TODO: Measure how long it takes from R2 Launch -> G1 Collect then + 1.5
+                                                Transfer.INSTANCE.openGate()
+                                        )
+                                )
                         )
                 ),
-                new Delay(0.5),
+
+                new Delay(0.25),
 
                 /// Wait 0.5 seconds and then collect G2 Artifacts and come back to launching position.
 
                 new ParallelGroup(
                         Transfer.INSTANCE.closeGate(),
-                        new FollowPath(paths.Gate2),
                         new SequentialGroup(
-                                new Delay(4.5), //TODO: Measure how long it takes from G1 Launch -> G2 Collect + 1.5
-                                Transfer.INSTANCE.openGate()
+                                new FollowPath(paths.Gate2_1),
+                                new Delay(1.4),
+                                new ParallelGroup(
+                                        new FollowPath(paths.Gate2_2),
+                                        new SequentialGroup(
+                                                new Delay(1), //TODO: Measure how long it takes from R2 Launch -> G1 Collect then + 1.5
+                                                Transfer.INSTANCE.openGate()
+                                        )
+                                )
                         )
                 ),
-                new Delay(0.5),
+                new Delay(0.25),
 
                 /// Wait 0.5 seconds and then collect G3 Artifacts and come back to launching position.
 
                 new ParallelGroup(
                         Transfer.INSTANCE.closeGate(),
-                        new FollowPath(paths.Gate3),
                         new SequentialGroup(
-                                new Delay(4.5), //TODO: Measure how long it takes from G2 Launch -> G3 Collect + 1.5
-                                Transfer.INSTANCE.openGate()
+                                new FollowPath(paths.Gate3_1),
+                                new Delay(1.4),
+                                new ParallelGroup(
+                                        new FollowPath(paths.Gate3_2),
+                                        new SequentialGroup(
+                                                new Delay(1), //TODO: Measure how long it takes from R2 Launch -> G1 Collect then + 1.5
+                                                Transfer.INSTANCE.openGate()
+                                        )
+                                )
                         )
                 ),
-                new Delay(0.5),
+                new Delay(0.25),
 
                 /// Wait 0.5 seconds and then collect R1 Artifacts and come back to launching position.
 
@@ -154,20 +172,21 @@ public class BT2GS21 extends NextFTCOpMode {
                         Transfer.INSTANCE.closeGate(),
                         new FollowPath(paths.R1),
                         new SequentialGroup(
-                                new Delay(7.95), //TODO: Measure how long it takes from G3 Launch -> R1 Collect then + 0.95
+                                new Delay(2.75), //TODO: Measure how long it takes from G3 Launch -> R1 Collect then + 0.95
                                 Transfer.INSTANCE.openGate()
                         )
                 ),
 
-                new Delay(0.5),
+                new Delay(0.25),
 
                 /// Wait 0.5 seconds and then collect R3 Artifacts and come back to launching + park position.
 
                 new ParallelGroup(
+//                        new InstantCommand(() -> Configuration.RPM_MULTIPLER = Configuration.RPM_MULTIPLER + 0.1),
                         Transfer.INSTANCE.closeGate(),
                         new FollowPath(paths.R3),
                         new SequentialGroup(
-                                new Delay(7.2), //TODO: Measure how long it takes from Preload -> R2 Collect then + 1.85
+                                new Delay(3.5), //TODO: Measure how long it takes from Preload -> R2 Collect then + 1.85
                                 Transfer.INSTANCE.openGate()
                         )
                 )
@@ -194,7 +213,7 @@ public class BT2GS21 extends NextFTCOpMode {
         double weight;
 
         if (!Double.isNaN(Shooter.INSTANCE.getTof())) {
-            weight = Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME;
+            weight = (Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME) - 0.9;
         } else {
             weight = 0.3;
         }
@@ -215,13 +234,13 @@ public class BT2GS21 extends NextFTCOpMode {
         double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
         vt = Math.sqrt((vn * vn) + (vxr * vxr));
 
-        Configuration.TURRET_OFFSET = 2;
+        Configuration.TURRET_OFFSET = 0;
         Shooter.INSTANCE.updateKinematics(
                 Shooter.INSTANCE.GOAL_DISTANCE,
                 Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
         );
 
-        Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER;
+        Shooter.INSTANCE.TARGET_RPM = (Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER) * 1.1;
 
         telemetry.addLine("=== Position ===");
         telemetry.addData("X", PedroComponent.follower().getPose().getX());
@@ -248,9 +267,13 @@ public class BT2GS21 extends NextFTCOpMode {
     public static class Paths {
         public PathChain PreloadLaunch;
         public PathChain R2;
-        public PathChain Gate1;
-        public PathChain Gate2;
-        public PathChain Gate3;
+        public PathChain Gate1_1;
+        public PathChain Gate1_2;
+        public PathChain Gate1_3;
+        public PathChain Gate2_1;
+        public PathChain Gate2_2;
+        public PathChain Gate3_1;
+        public PathChain Gate3_2;
         public PathChain R1;
         public PathChain R3;
 
@@ -272,78 +295,103 @@ public class BT2GS21 extends NextFTCOpMode {
                     .setLinearHeadingInterpolation(Math.toRadians(200), Math.toRadians(180))
                     .addPath(new BezierLine(
                             new Pose(21.000, 60.000),
-                            new Pose(57.000, 78.000)
-                    ))
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(190))
-                    .build();
-
-            Gate1 = follower.pathBuilder()
-                    .addPath(new BezierCurve(
-                            new Pose(57.000, 78.000),
-                            new Pose(36.000, 62.500),
-                            new Pose(14.200, 62.000)
-                    ))
-                    .setLinearHeadingInterpolation(Math.toRadians(190), Math.toRadians(145))
-                    .addParametricCallback(1, () -> new Delay(0.15).schedule())
-                    .addPath(new BezierCurve(
-                            new Pose(14.200, 62.000),
-                            new Pose(17.000, 58.000),
-                            new Pose(14.000, 54.000)
-                    ))
-                    .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(125))
-                    .addParametricCallback(1, () -> new Delay(0.75).schedule())
-                    .addPath(new BezierLine(
-                            new Pose(14.000, 54.000),
                             new Pose(59.000, 77.000)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(125), Math.toRadians(195))
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(195))
                     .build();
 
-            Gate2 = follower.pathBuilder()
+            Gate1_1 = follower.pathBuilder()
                     .addPath(new BezierCurve(
                             new Pose(59.000, 77.000),
                             new Pose(40.000, 62.000),
-                            new Pose(14.200, 62.000)
+                            new Pose(9, 59.065)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(195), Math.toRadians(145))
-                    .addParametricCallback(1, () -> new Delay(1.75).schedule())
+                    .setLinearHeadingInterpolation(Math.toRadians(195), Math.toRadians(150.81))
+                    .setTValueConstraint(0.95)
+                    .setVelocityConstraint(3)
+                    .setTranslationalConstraint(0.2)
+                    .setHeadingConstraint(Math.toRadians(1.5))
+                    .setTimeoutConstraint(1000)
+                    .build();
+
+//            Gate1_2 = follower.pathBuilder()
+//                    .addPath(new BezierCurve(
+//                            new Pose(10, 60.954),
+//                            new Pose(17.000, 58.000),
+//                            new Pose(12.000, 56.000)
+//                    ))
+//                    .setLinearHeadingInterpolation(Math.toRadians(151.89), Math.toRadians(125))
+//                    .build();
+
+            Gate1_3 = follower.pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(14.200, 62.000),
+                            new Pose(9, 59.065),
                             new Pose(18.300, 60.316),
                             new Pose(21.089, 62.013),
                             new Pose(59.000, 77.000)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(195))
+                    .setLinearHeadingInterpolation(Math.toRadians(150.81), Math.toRadians(195))
                     .build();
 
-            Gate3 = follower.pathBuilder()
+            Gate2_1 = follower.pathBuilder()
                     .addPath(new BezierCurve(
                             new Pose(59.000, 77.000),
                             new Pose(40.000, 62.000),
-                            new Pose(14.200, 62.000)
+                            new Pose(9, 60.065)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(195), Math.toRadians(145))
-                    .addParametricCallback(1, () -> new Delay(1.75).schedule())
+                    .setLinearHeadingInterpolation(Math.toRadians(195), Math.toRadians(150.81))
+                    .setTValueConstraint(0.95)
+                    .setVelocityConstraint(3)
+                    .setTranslationalConstraint(0.2)
+                    .setHeadingConstraint(Math.toRadians(1.5))
+                    .setTimeoutConstraint(1000)
+                    .build();
+
+            Gate2_2 = follower.pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(14.200, 62.000),
+                            new Pose(9, 60.065),
                             new Pose(18.300, 60.316),
                             new Pose(21.089, 62.013),
                             new Pose(59.000, 77.000)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(195))
+                    .setLinearHeadingInterpolation(Math.toRadians(150.81), Math.toRadians(195))
+                    .build();
+
+            Gate3_1 = follower.pathBuilder()
+                    .addPath(new BezierCurve(
+                            new Pose(59.000, 77.000),
+                            new Pose(40.000, 62.000),
+                            new Pose(9, 60.065)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(195), Math.toRadians(150.81))
+                    .setTValueConstraint(0.95)
+                    .setVelocityConstraint(3)
+                    .setTranslationalConstraint(0.2)
+                    .setHeadingConstraint(Math.toRadians(1.5))
+                    .setTimeoutConstraint(1000)
+                    .build();
+
+            Gate3_2 = follower.pathBuilder()
+                    .addPath(new BezierCurve(
+                            new Pose(9, 60.065),
+                            new Pose(18.300, 60.316),
+                            new Pose(21.089, 62.013),
+                            new Pose(59.000, 77.000)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(150.81), Math.toRadians(195))
                     .build();
 
             R1 = follower.pathBuilder()
                     .addPath(new BezierLine(
                             new Pose(59.000, 77.000),
-                            new Pose(21.000, 83.000)
+                            new Pose(30, 83)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(165), Math.toRadians(180))
+                    .setLinearHeadingInterpolation(Math.toRadians(195), Math.toRadians(180))
                     .addPath(new BezierLine(
-                            new Pose(21.000, 83.000),
-                            new Pose(56.000, 82.000)
+                            new Pose(30, 83),
+                            new Pose(56, 82)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(245))
+                    .setLinearHeadingInterpolation(Math.toRadians(245), Math.toRadians(245))
                     .build();
 
             R3 = follower.pathBuilder()

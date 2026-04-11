@@ -49,7 +49,7 @@ public class ShooterDebug extends NextFTCOpMode {
         PedroComponent.follower().setStartingPose(new com.pedropathing.geometry.Pose(72, 72, Math.toRadians(270)));
         Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
 
-        Shooter.INSTANCE.mode = Shooter.Mode.manual;
+        Shooter.INSTANCE.MODE = Shooter.Mode.MANUAL;
         Turret.INSTANCE.mode = Turret.Mode.odometry;
     }
 
@@ -113,7 +113,7 @@ public class ShooterDebug extends NextFTCOpMode {
                     } else {
                         debugMode = DebugMode.MANUAL;
                     }
-                    Shooter.INSTANCE.mode = Shooter.Mode.manual;
+                    Shooter.INSTANCE.MODE = Shooter.Mode.MANUAL;
                 });
     }
 

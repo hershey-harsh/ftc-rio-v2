@@ -49,7 +49,7 @@ public class Transfer implements Subsystem {
     public boolean GATE3_STOPPED = false;        // true after ball detected and motor stopped
     public boolean GATE3_BALL_PRESENT = false;   // latched: true = ball confirmed at gate 3
     private boolean STARTED = false;             // true after intake() is called — prevents running during init
-    private static final double GATE3_THRESHOLD = 8;  // cm
+    private static final double GATE3_THRESHOLD = 8.5;  // cm
 
     // Gate 1&2 break beam debounce — sensor is noisy when ball is present (toggles 3-4x in ~2s)
     // count rising edges (transitions from false→true) in a rolling window.
@@ -60,7 +60,7 @@ public class Transfer implements Subsystem {
     private final ElapsedTime gate12WindowTimer = new ElapsedTime(); // rolling window timer
     public boolean GATE12_BALL_PRESENT = false;   // latched: true = ball confirmed at gate 1&2
     private static final double GATE12_DEBOUNCE_WINDOW = 3.0;  // seconds window to count transitions
-    private static final int GATE12_DEBOUNCE_THRESHOLD = 3;    // transitions needed to confirm ball
+    private static final int GATE12_DEBOUNCE_THRESHOLD = 4;    // transitions needed to confirm ball
 
     // All full auto-stop: both gate3 AND gate1And2 latched full (method cooked i think)
     public boolean ALL_STOPPED = false;          // true after both sensors full — all motors stopped
@@ -94,22 +94,13 @@ public class Transfer implements Subsystem {
     public void periodic() {
         gate3Distance = gate3Sensor.getDistance(DistanceUnit.CM);
 
-        // --- Gate 3 distance sensor latch ---
-        // Once the distance reads below threshold, latch GATE3_BALL_PRESENT = true.
-        // The latch is only cleared when openGate() / closeGate() is called.
         if (!GATE3_BALL_PRESENT && gate3Distance < GATE3_THRESHOLD) {
             GATE3_BALL_PRESENT = true;
         }
 
-        // --- Gate 1&2 break beam debounce ---
-        // DigitalChannel.getState() returns FALSE when beam is broken (ball blocking).
-        // Raw sensor toggles rapidly when a ball is present (3-4x in ~2s).
-        // Count falling edges (true → false = beam broken) in a rolling window.
-        // The latch is only cleared when the gate is opened (ball leaves).
-        boolean gate12Raw = gate1And2Sensor.getState(); // true = clear, false = beam broken
+        boolean gate12Raw = gate1And2Sensor.getState();
 
         if (!GATE12_BALL_PRESENT) {
-            // Detect falling edges (true → false = beam just got broken)
             if (!gate12Raw && gate12LastRawState) {
                 if (gate12TransitionCount == 0) {
                     gate12WindowTimer.reset();
@@ -117,14 +108,12 @@ public class Transfer implements Subsystem {
                 gate12TransitionCount++;
             }
 
-            // Check if we've hit the threshold within the window
             if (gate12TransitionCount >= GATE12_DEBOUNCE_THRESHOLD
                     && gate12WindowTimer.seconds() <= GATE12_DEBOUNCE_WINDOW) {
                 GATE12_BALL_PRESENT = true;
                 Light.INSTANCE.setColor(Light.AZURE, Light.Target.ROBOT).schedule();
             }
 
-            // If the window expired without reaching threshold, reset counter
             if (gate12WindowTimer.seconds() > GATE12_DEBOUNCE_WINDOW) {
                 gate12TransitionCount = 0;
             }
@@ -134,9 +123,6 @@ public class Transfer implements Subsystem {
         if (!STARTED) return;
         if (GATE_OVERRIDE) return;
 
-        // --- Gate 3 auto-stop: CONTINUOUSLY enforce motor2 = 0 every frame ---
-        // This ensures that even if intake() sets power between periodic() calls,
-        // the motor gets shut off again on the very next loop.
         if (GATE3_BALL_PRESENT) {
             GATE3_STOPPED = true;
             transferMotor2.setPower(0);
@@ -145,7 +131,6 @@ public class Transfer implements Subsystem {
             transferMotor2.setPower(-INTAKE_POWER);
         }
 
-        // --- All-full auto-stop: CONTINUOUSLY enforce motor1 = 0 every frame ---
         if (GATE3_BALL_PRESENT && GATE12_BALL_PRESENT) {
             ALL_STOPPED = true;
             transferMotor1.setPower(0);
@@ -161,7 +146,6 @@ public class Transfer implements Subsystem {
             CURRENT_POWER = -INTAKE_POWER;
             THIRD_GATE_POWER = INTAKE_POWER;
 
-            // Only set motor power if periodic() hasn't auto-stopped them
             if (!ALL_STOPPED) {
                 transferMotor1.setPower(CURRENT_POWER);
             }
@@ -232,19 +216,18 @@ public class Transfer implements Subsystem {
 
     public  Command openGate() {
         return new InstantCommand(() -> {
+            if (!Shooter.INSTANCE.isUpToSpeed()) return;
+
             GATE_OVERRIDE = true;
             GATE3_STOPPED = false;
             GATE3_BALL_PRESENT = false;
             ALL_STOPPED = false;
             THIRD_GATE_POWER = INTAKE_POWER;
-
-            // Ball is leaving — clear the gate 1&2 debounce latch
             GATE12_BALL_PRESENT = false;
             Light.INSTANCE.setColor(Light.WHITE, Light.Target.ROBOT).schedule();
             gate12TransitionCount = 0;
             gate12WindowTimer.reset();
 
-            // Run motors first, then open gate
             transferMotor1.setPower(-INTAKE_POWER);
             transferMotor2.setPower(-THIRD_GATE_POWER);
             servoGate1.setPosition(GATE_ONE_OPEN);
@@ -259,6 +242,7 @@ public class Transfer implements Subsystem {
             GATE3_BALL_PRESENT = false;
             ALL_STOPPED = false;
             THIRD_GATE_POWER = INTAKE_POWER;
+
             transferMotor2.setPower(-THIRD_GATE_POWER);
             servoGate1.setPosition(GATE_ONE_CLOSED);
             servoGate2.setPosition(GATE_TWO_CLOSED);

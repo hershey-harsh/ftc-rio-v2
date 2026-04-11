@@ -20,7 +20,6 @@ import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
-@Disabled
 @TeleOp(name = "Turret", group = "Debug")
 public class TurretDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;
@@ -53,7 +52,7 @@ public class TurretDebug extends NextFTCOpMode {
         Turret.INSTANCE.mode = Turret.Mode.manual;
 
         // Set shooter to odometry mode - RPM will be calculated from hood position using math model
-        Shooter.INSTANCE.mode = Shooter.Mode.odometry;
+        Shooter.INSTANCE.MODE = Shooter.Mode.ODOMETRY;
 
         // Enable hood servos and set initial position
         Shooter.INSTANCE.hoodServo1.getServo().getController().pwmEnable();

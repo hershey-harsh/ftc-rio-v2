@@ -168,7 +168,7 @@ public class Rushed extends NextFTCOpMode {
 //        telemetry.addData("Turret Servo Pos", "%.3f", Turret.INSTANCE.TURRET_POSITION);
 
         telemetry.addData("=== Shooter ===", "");
-        telemetry.addData("Shooter Mode", Shooter.INSTANCE.mode);
+        telemetry.addData("Shooter Mode", Shooter.INSTANCE.MODE);
         telemetry.addData("Goal Distance", Shooter.INSTANCE.GOAL_DISTANCE);
         //telemetry.addData("Flywheel RPM Goal", Shooter.INSTANCE.FLYWHEEL_RPM_GOAL);
         //telemetry.addData("Hood Angle", Shooter.INSTANCE.HOOD_ANGLE);
@@ -187,7 +187,7 @@ public class Rushed extends NextFTCOpMode {
 }
 
 
-//        if (Shooter.INSTANCE.mode == Shooter.Mode.odometry) {
+//        if (Shooter.INSTANCE.MODE == Shooter.Mode.ODOMETRY) {
 //X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
 //Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
 //

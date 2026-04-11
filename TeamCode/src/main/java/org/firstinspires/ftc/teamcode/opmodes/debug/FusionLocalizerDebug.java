@@ -53,8 +53,7 @@ public class FusionLocalizerDebug extends NextFTCOpMode {
         PedroComponent.follower().setStartingPose(startPose);
         Configuration.CURRENT_POSE = startPose;
 
-        // Start with auto-update enabled
-        Limelight.INSTANCE.autoUpdateEnabled = true;
+        Limelight.INSTANCE.DEBUG_TELEMETRY = true;
 
         telemetry.addLine("=== Fusion Localizer Debug ===");
         telemetry.addLine("Uses Pinpoint + Limelight fusion.");
@@ -113,89 +112,9 @@ public class FusionLocalizerDebug extends NextFTCOpMode {
         telemetry.addData("Loop Rate (hz)", LOOP_TIME > 0 ? String.format(Locale.US, "%.1f", 1000.0 / LOOP_TIME) : "---");
 
         telemetry.addLine();
-        telemetry.addData("=== Fused Pose (output) ===", "");
         telemetry.addData("X (in)", String.format(Locale.US, "%.3f", pose.getX()));
         telemetry.addData("Y (in)", String.format(Locale.US, "%.3f", pose.getY()));
         telemetry.addData("Heading (deg)", String.format(Locale.US, "%.2f", headingDeg));
-
-        // --- Limelight Pipeline Counters ---
-        telemetry.addLine();
-        telemetry.addData("=== LL Pipeline ===", "");
-        telemetry.addData("Auto-Update", Limelight.INSTANCE.autoUpdateEnabled);
-        telemetry.addData("Polls", Limelight.INSTANCE.pollCount);
-        telemetry.addData("Valid Results", Limelight.INSTANCE.validResultCount);
-        telemetry.addData("Botpose Null", Limelight.INSTANCE.botposeNullCount);
-        telemetry.addData("Measurements Sent", Limelight.INSTANCE.measurementSentCount);
-        telemetry.addData("Manual Updates", updateCount);
-        telemetry.addData("April Tag Position", Limelight.INSTANCE.botpose3D);
-
-        // --- Raw LL Result ---
-        telemetry.addLine();
-        telemetry.addData("=== LL Raw Result ===", "");
-        if (Limelight.INSTANCE.limelightResult == null) {
-            telemetry.addData("Result", "NULL");
-        } else {
-            telemetry.addData("Valid", Limelight.INSTANCE.limelightResult.isValid());
-            telemetry.addData("Staleness (ns)", String.format(Locale.US, "%d", Limelight.INSTANCE.limelightResult.getStaleness()));
-            telemetry.addData("Staleness (ms)", String.format(Locale.US, "%.1f", Limelight.INSTANCE.limelightResult.getStaleness() / 1e6));
-        }
-
-        // --- Raw LL Botpose ---
-        telemetry.addLine();
-        telemetry.addData("=== LL Raw Botpose ===", "");
-        if (Limelight.INSTANCE.lastRawBotpose != null) {
-            Pose3D bp = Limelight.INSTANCE.lastRawBotpose;
-            telemetry.addData("X (m)", String.format(Locale.US, "%.4f", bp.getPosition().x));
-            telemetry.addData("Y (m)", String.format(Locale.US, "%.4f", bp.getPosition().y));
-            telemetry.addData("Z (m)", String.format(Locale.US, "%.4f", bp.getPosition().z));
-            telemetry.addData("Yaw (deg)", String.format(Locale.US, "%.2f", bp.getOrientation().getYaw()));
-            telemetry.addData("Pitch (deg)", String.format(Locale.US, "%.2f", bp.getOrientation().getPitch()));
-            telemetry.addData("Roll (deg)", String.format(Locale.US, "%.2f", bp.getOrientation().getRoll()));
-        } else {
-            telemetry.addData("Botpose", "NEVER RECEIVED");
-        }
-
-        // --- Converted Pedro Pose (what gets sent to fusion) ---
-        telemetry.addLine();
-        telemetry.addData("=== LL -> Pedro Pose ===", "");
-        if (Limelight.INSTANCE.lastPedroPose != null) {
-            Pose pp = Limelight.INSTANCE.lastPedroPose;
-            telemetry.addData("X (in)", String.format(Locale.US, "%.3f", pp.getX()));
-            telemetry.addData("Y (in)", String.format(Locale.US, "%.3f", pp.getY()));
-            telemetry.addData("Heading (deg)", String.format(Locale.US, "%.2f", Math.toDegrees(pp.getHeading())));
-
-            // Delta between fused and LL measurement
-            double dx = pose.getX() - pp.getX();
-            double dy = pose.getY() - pp.getY();
-            double dh = Math.toDegrees(pose.getHeading() - pp.getHeading());
-            telemetry.addData("Delta X (fused-LL)", String.format(Locale.US, "%.3f", dx));
-            telemetry.addData("Delta Y (fused-LL)", String.format(Locale.US, "%.3f", dy));
-            telemetry.addData("Delta H (fused-LL)", String.format(Locale.US, "%.2f°", dh));
-        } else {
-            telemetry.addData("Pedro Pose", "NEVER CONVERTED");
-        }
-
-        // --- Fusion Localizer State ---
-        telemetry.addLine();
-        telemetry.addData("=== Fusion Localizer ===", "");
-        if (Configuration.fusionLocalizer != null) {
-            telemetry.addData("Active", true);
-            telemetry.addData("isNaN", Configuration.fusionLocalizer.isNAN());
-
-            // Timestamp sanity check
-            long now = System.nanoTime();
-            long lastTs = Limelight.INSTANCE.lastMeasurementTimestamp;
-            if (lastTs > 0) {
-                long ageNs = now - lastTs;
-                telemetry.addData("Last Meas Age (ms)", String.format(Locale.US, "%.1f", ageNs / 1e6));
-                telemetry.addData("Last Meas Timestamp", String.format(Locale.US, "%d", lastTs));
-                telemetry.addData("System.nanoTime()", String.format(Locale.US, "%d", now));
-            } else {
-                telemetry.addData("Last Meas", "NONE");
-            }
-        } else {
-            telemetry.addData("Active", "NULL — NOT CREATED!");
-        }
 
         telemetry.addLine();
         telemetry.addLine("--- Controls ---");

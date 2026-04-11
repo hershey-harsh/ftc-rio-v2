@@ -52,6 +52,7 @@ public class Configuration {
 
     public static int RED_LIMELIGHT_PIPELINE = 2;
     public static int BLUE_LIMELIGHT_PIPELINE = 3;
+    public static int MOTIF_LIMELIGHT_PIPELINE = 4;
 
     // Configure Alliance and Control Scheme between and prior to matches.
 

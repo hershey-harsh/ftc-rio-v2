@@ -6,7 +6,10 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Configuration;
+
+import java.util.Locale;
 
 import dev.nextftc.control.ControlSystem;
 import dev.nextftc.control.KineticState;
@@ -51,14 +54,15 @@ public class Shooter implements Subsystem {
     public double MIN_HOOD_ANGLE = 43.0;
     public double MAX_HOOD_ANGLE = 70.0;
 
-    public Mode mode = Mode.odometry;
+    public Mode MODE = Mode.ODOMETRY, LAST_MODE = null;
+    public boolean DEBUG_TELEMETRY = false;
 
     public double GOAL_DISTANCE = 0;
     private boolean started = false;
 
     public enum Mode {
-        manual,
-        odometry,
+        MANUAL,
+        ODOMETRY,
     }
 
     @Override
@@ -83,17 +87,16 @@ public class Shooter implements Subsystem {
                 .build();
 
         started = false;
-        mode = Mode.manual;
+        MODE = Mode.MANUAL;
+        LAST_MODE = null;
         TARGET_RPM = 0;
-
-//        velController = new PIDController(kP, kI, kD);
-//        voltageSensor = ActiveOpMode.hardwareMap().voltageSensor.iterator().next();
     }
 
     @Override
     public void periodic() {
         if (!started) return;
 
+        Telemetry t = ActiveOpMode.telemetry();
         Pose pose = Configuration.CURRENT_POSE;
 
         if (Configuration.ALLIANCE == Configuration.Alliance.RED) {
@@ -106,10 +109,20 @@ public class Shooter implements Subsystem {
                     (Configuration.BLUE_GOAL_POSE.getY() + Configuration.Y_GOAL_OFFSET) - pose.getY())) * 0.0254;
         }
 
-        if (mode == Mode.odometry) {
+        if (MODE != LAST_MODE) {
+            switch (MODE) {
+                case MANUAL:
+                    break;
+                case ODOMETRY:
+                    break;
+            }
+            LAST_MODE = MODE;
+        }
+
+        if (MODE == Mode.ODOMETRY) {
             HOOD_ANGLE = getHoodAngle(GOAL_DISTANCE);
             if (Configuration.CURRENT_POSE.getY() < 36) {
-                Shooter.INSTANCE.setHoodAngle(46);
+                Shooter.INSTANCE.setHoodAngle(43);
             } else {
                 Shooter.INSTANCE.setHoodAngle(HOOD_ANGLE);
             }
@@ -118,6 +131,29 @@ public class Shooter implements Subsystem {
         double targetVelocity = rpmToVelocity(TARGET_RPM);
         controlSystem.setGoal(new KineticState(0.0, targetVelocity));
         flywheelMotor.setPower(controlSystem.calculate(flywheelMotor.getState()));
+
+        double currentRPM = velocityToRPM(flywheelMotor.getState().getVelocity());
+
+        t.addLine();
+        t.addData("----- Shooter Status -----", "");
+        t.addData("Shooter Mode", MODE.name());
+        t.addData("Target RPM", String.format(Locale.US, "%.0f", TARGET_RPM));
+        t.addData("Current RPM", String.format(Locale.US, "%.0f", currentRPM));
+        t.addData("Up To Speed", isUpToSpeed());
+
+        if (DEBUG_TELEMETRY) {
+            t.addLine();
+            t.addData("----- Shooter Debug -----", "");
+            t.addData("Goal Distance (m)", String.format(Locale.US, "%.3f", GOAL_DISTANCE));
+            t.addData("Hood Angle (deg)", String.format(Locale.US, "%.1f", HOOD_ANGLE));
+            t.addData("Hood Position", String.format(Locale.US, "%.3f", HOOD_POSITION));
+            t.addData("RPM Error", String.format(Locale.US, "%.0f", TARGET_RPM - currentRPM));
+            t.addData("RPM Tolerance", String.format(Locale.US, "%.0f", RPM_TOLERANCE));
+            t.addData("Kinematic RPM Goal", String.format(Locale.US, "%.0f", KINEMATIC_RPM_GOAL));
+            t.addData("Kinematic Velocity (m/s)", String.format(Locale.US, "%.3f", v));
+            t.addData("Time of Flight (s)", String.format(Locale.US, "%.3f", tof));
+            t.addData("Flywheel Started", started);
+        }
     }
 
     private double a, b, n, t_u, t_g, tof, vX, vY, v, m;
@@ -157,6 +193,15 @@ public class Shooter implements Subsystem {
     }
     public static double velocityToRPM(double velocity) { return (velocity / TICKS_PER_REV) * 60.0; }
 
+    public static double RPM_TOLERANCE = 400;
+
+    public boolean isUpToSpeed() {
+        return true; // Override to always return true for testing without actual hardware
+//        if (TARGET_RPM <= 0) return false;
+//        double currentRPM = velocityToRPM(flywheelMotor.getState().getVelocity());
+//        return Math.abs(TARGET_RPM - currentRPM) <= RPM_TOLERANCE;
+    }
+
     public void stopShooter() {
         flywheelMotor1.getMotor().setPower(0);
         flywheelMotor2.getMotor().setPower(0);
@@ -178,13 +223,13 @@ public class Shooter implements Subsystem {
             started = true;
             flywheelMotor1.getMotor().setMotorEnable();
             flywheelMotor2.getMotor().setMotorEnable();
-            mode = Mode.odometry;
+            MODE = Mode.ODOMETRY;
         });
     }
 
     public Command off() {
         return new InstantCommand(() -> {
-            mode = Mode.manual;
+            MODE = Mode.MANUAL;
             stopShooter();
         });
     }
@@ -192,7 +237,7 @@ public class Shooter implements Subsystem {
     public Command start() {
         return new InstantCommand(() -> {
             started = true;
-            mode = Mode.manual;
+            MODE = Mode.MANUAL;
             hoodServo1.getServo().getController().pwmEnable();
             hoodServo2.getServo().getController().pwmEnable();
             flywheelMotor1.getMotor().setMotorEnable();
@@ -202,7 +247,7 @@ public class Shooter implements Subsystem {
 
     public Command emergencyStop() {
         return new InstantCommand(() -> {
-            mode = Mode.manual;
+            MODE = Mode.MANUAL;
             hoodServo1.getServo().getController().pwmDisable();
             hoodServo2.getServo().getController().pwmDisable();
             flywheelMotor1.getMotor().setMotorDisable();
@@ -211,16 +256,16 @@ public class Shooter implements Subsystem {
     }
 
     public Command changeToManual() {
-        return new InstantCommand(() -> mode = Mode.manual);
+        return new InstantCommand(() -> MODE = Mode.MANUAL);
     }
 
     public Command changeToAuto() {
-        return new InstantCommand(() -> mode = Mode.odometry);
+        return new InstantCommand(() -> MODE = Mode.ODOMETRY);
     }
 
     public Command increaseHood() {
         return new InstantCommand(() -> {
-            if (mode != Mode.manual) return;
+            if (MODE != Mode.MANUAL) return;
             double newAngle = Math.min(HOOD_ANGLE + HOOD_INCREMENT, MAX_HOOD_ANGLE);
             setHoodAngle(newAngle);
         });
@@ -228,7 +273,7 @@ public class Shooter implements Subsystem {
 
     public Command decreaseHood() {
         return new InstantCommand(() -> {
-            if (mode != Mode.manual) return;
+            if (MODE != Mode.MANUAL) return;
             double newAngle = Math.max(HOOD_ANGLE - HOOD_INCREMENT, MIN_HOOD_ANGLE);
             setHoodAngle(newAngle);
         });
@@ -236,7 +281,7 @@ public class Shooter implements Subsystem {
 
     public Command adjustShooterRPM(double stickValue) {
         return new InstantCommand(() -> {
-            if (mode != Mode.manual) return;
+            if (MODE != Mode.MANUAL) return;
             TARGET_RPM = Math.max(0, TARGET_RPM + (stickValue * RPM_INCREMENT));
         });
     }

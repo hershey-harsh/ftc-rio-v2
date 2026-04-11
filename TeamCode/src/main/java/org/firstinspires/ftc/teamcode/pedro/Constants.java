@@ -26,7 +26,7 @@ public class Constants {
             // kP usually ranges from 0.05-0.3. kP changes are harder to notice and have minimal effects.
             // However, tune kP as high as possible so it will give you the most holding strength and accuracy
             // but without jittering the robot. You may also lower kP if you want smoother reactions.
-            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.3, 0.086595400785,0.0025996451))
+            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.2, 0.1413192,0.0013711))
             .headingPIDFCoefficients(new PIDFCoefficients(1.2, 0, 0.08, 0.025)); //TODO: Fine tune these values using automatic tuner
     //.secondaryHeadingPIDFCoefficients((new PIDFCoefficients(1, 0, 0.01, 0.025))) //TODO: Fine tune these values
     //.useSecondaryHeadingPIDF(true)
@@ -66,13 +66,13 @@ public class Constants {
                 new PinpointLocalizer(hardwareMap, localizerConstants),
                 // Accuracy of initial position
                 // x (inches), y (inches), angle (radians)
-                new Pose(0.5, 0.5, 0.05),   // P: initial covariance
+                new Pose(0.25, 0.25),   // P: initial covariance
                 // Error accumulation of localizer over time
                 // x (in^2/s^2), y (in^2/s^2), angle (rad^2/s^s)
-                new Pose(1.0, 1.0, 0.1),    // Q: process variance
+                new Pose(0.0005, 0.0005),    // Q: process variance
                 // Accuracy of measurement to be fused (usually vision)
                 // x (inches), y (inches), angle (radians)
-                new Pose(4.0, 4.0, 0.04),   // R: measurement variance
+                new Pose(1.0, 1.0),   // R: measurement variance
                 // Path history points to retain. You must retain enough
                 // history to account for the delay of vision detections.
                 // The # of points is dependent on the speed of your control

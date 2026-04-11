@@ -288,7 +288,7 @@ public class BlueCompetition extends NextFTCOpMode {
 
         driverControlled.setScalar(Configuration.CONTROL_SCALE);
 
-        if (Shooter.INSTANCE.mode == Shooter.Mode.odometry) {
+        if (Shooter.INSTANCE.MODE == Shooter.Mode.ODOMETRY) {
             if (Configuration.CURRENT_POSE.getY() < 36) {
                 Configuration.setAimPointOffset(0, 0);
                 Shooter.INSTANCE.TARGET_RPM = 4300;
