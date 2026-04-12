@@ -58,7 +58,7 @@ public class RedCompetition extends NextFTCOpMode {
     public RedCompetition() {
         addComponents(
                 BindingsComponent.INSTANCE,
-                new PedroComponent(Constants::createFusionFollower),
+                new PedroComponent(Constants::createFollower),
                 new SubsystemComponent(Light.INSTANCE),
                 new SubsystemComponent(Limelight.INSTANCE),
                 new SubsystemComponent(Shooter.INSTANCE),
@@ -265,8 +265,12 @@ public class RedCompetition extends NextFTCOpMode {
                 .whenTrue(() -> Transfer.INSTANCE.intake().schedule());
 
         // Right Bumper → Gate Open while held, close when released
+        // Use 50% transfer power when close to goal (Y < 36)
         button(() -> gamepad2.right_bumper)
-                .whenTrue(() -> Transfer.INSTANCE.openGate().schedule())
+                .whenTrue(() -> {
+                    double power = Configuration.CURRENT_POSE.getY() < 36 ? 0.5 : 1.0;
+                    Transfer.INSTANCE.openGate(power).schedule();
+                })
                 .whenBecomesFalse(() -> Transfer.INSTANCE.closeGate().schedule());
     }
 
@@ -334,7 +338,7 @@ public class RedCompetition extends NextFTCOpMode {
             if (Configuration.CURRENT_POSE.getY() < 36) {
                 Configuration.setAimPointOffset(0, 0);
                 Shooter.INSTANCE.TARGET_RPM = 4100;
-                Configuration.TURRET_OFFSET = 2;
+                Configuration.TURRET_OFFSET = 1;
             } else {
                 X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
                 Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
@@ -379,7 +383,12 @@ public class RedCompetition extends NextFTCOpMode {
                         Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
                 );
 
-                Configuration.TURRET_OFFSET = 0;
+                Configuration.TURRET_OFFSET = -0.5;
+
+                if (Configuration.CURRENT_POSE.getX() <= 62.575 && Configuration.CURRENT_POSE.getY() > 101.762) {
+                    Configuration.TURRET_OFFSET = -2;
+                }
+
                 Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER;
             }
         }

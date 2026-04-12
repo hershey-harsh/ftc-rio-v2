@@ -215,6 +215,10 @@ public class Transfer implements Subsystem {
     }
 
     public  Command openGate() {
+        return openGate(INTAKE_POWER);
+    }
+
+    public Command openGate(double power) {
         return new InstantCommand(() -> {
             if (!Shooter.INSTANCE.isUpToSpeed()) return;
 
@@ -222,13 +226,13 @@ public class Transfer implements Subsystem {
             GATE3_STOPPED = false;
             GATE3_BALL_PRESENT = false;
             ALL_STOPPED = false;
-            THIRD_GATE_POWER = INTAKE_POWER;
+            THIRD_GATE_POWER = power;
             GATE12_BALL_PRESENT = false;
             Light.INSTANCE.setColor(Light.WHITE, Light.Target.ROBOT).schedule();
             gate12TransitionCount = 0;
             gate12WindowTimer.reset();
 
-            transferMotor1.setPower(-INTAKE_POWER);
+            transferMotor1.setPower(-power);
             transferMotor2.setPower(-THIRD_GATE_POWER);
             servoGate1.setPosition(GATE_ONE_OPEN);
             servoGate2.setPosition(GATE_TWO_OPEN);
