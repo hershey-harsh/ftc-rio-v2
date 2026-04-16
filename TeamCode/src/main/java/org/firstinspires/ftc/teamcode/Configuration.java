@@ -33,8 +33,11 @@ public class Configuration {
     public static final Pose RED_LOCALIZATION_POSE = new Pose(10.045999999999992, 10.703, Math.toRadians(180));
     public static final Pose BLUE_LOCALIZATION_POSE = new Pose(133.954, 10.703, Math.toRadians(0));
     public static final Pose GATE_OPEN_RED = new Pose(131.752, 62.388, Math.toRadians(23.19));
+    public static final Pose GATE_OPEN_RED_2 = new Pose(111.45428282828283, 53.34450505050505);
     public static final Pose GATE_OPEN_BLUE = new Pose(84.703, 83.830, Math.toRadians(24.3));
+    public static final Pose GATE_OPEN_BLUE_2 = new Pose(64.40528282828283, 74.78650505050505); //TODO: Fine tune.
     public static final Pose RED_PARK_BR = new Pose(39.70909090909092, 32.29090909090909, Math.toRadians(90));
+    public static final Pose BLUE_PARK_BR = new Pose(39.70909090909092, 32.29090909090909, Math.toRadians(90)).mirror();
     public static final Pose RED_LAUNCH = new Pose(39.70909090909092, 32.29090909090909, Math.toRadians(90));
     public static double X_GOAL_OFFSET = 0, Y_GOAL_OFFSET = 0, TURRET_OFFSET = 0;
 

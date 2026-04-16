@@ -49,7 +49,7 @@ public class Transfer implements Subsystem {
     public boolean GATE3_STOPPED = false;        // true after ball detected and motor stopped
     public boolean GATE3_BALL_PRESENT = false;   // latched: true = ball confirmed at gate 3
     private boolean STARTED = false;             // true after intake() is called — prevents running during init
-    private static final double GATE3_THRESHOLD = 8.5;  // cm
+    private static final double GATE3_THRESHOLD = 8;  // cm
 
     // Gate 1&2 break beam debounce — sensor is noisy when ball is present (toggles 3-4x in ~2s)
     // count rising edges (transitions from false→true) in a rolling window.
@@ -59,8 +59,8 @@ public class Transfer implements Subsystem {
     public int gate12TransitionCount = 0;          // number of falling edges in current window
     private final ElapsedTime gate12WindowTimer = new ElapsedTime(); // rolling window timer
     public boolean GATE12_BALL_PRESENT = false;   // latched: true = ball confirmed at gate 1&2
-    private static final double GATE12_DEBOUNCE_WINDOW = 3.0;  // seconds window to count transitions
-    private static final int GATE12_DEBOUNCE_THRESHOLD = 4;    // transitions needed to confirm ball
+    private static final double GATE12_DEBOUNCE_WINDOW = 4.5;  // seconds window to count transitions
+    public int GATE12_DEBOUNCE_THRESHOLD = 4;    // transitions needed to confirm ball
 
     // All full auto-stop: both gate3 AND gate1And2 latched full (method cooked i think)
     public boolean ALL_STOPPED = false;          // true after both sensors full — all motors stopped
@@ -111,7 +111,6 @@ public class Transfer implements Subsystem {
             if (gate12TransitionCount >= GATE12_DEBOUNCE_THRESHOLD
                     && gate12WindowTimer.seconds() <= GATE12_DEBOUNCE_WINDOW) {
                 GATE12_BALL_PRESENT = true;
-                Light.INSTANCE.setColor(Light.AZURE, Light.Target.ROBOT).schedule();
             }
 
             if (gate12WindowTimer.seconds() > GATE12_DEBOUNCE_WINDOW) {
@@ -228,7 +227,6 @@ public class Transfer implements Subsystem {
             ALL_STOPPED = false;
             THIRD_GATE_POWER = power;
             GATE12_BALL_PRESENT = false;
-            Light.INSTANCE.setColor(Light.WHITE, Light.Target.ROBOT).schedule();
             gate12TransitionCount = 0;
             gate12WindowTimer.reset();
 

@@ -41,8 +41,6 @@ public class BT2GS21 extends NextFTCOpMode {
     private double Y_VELOCITY = 0;
     public double TRUE_TARGET_DEGREE = 0;
 
-    private static double RPM_SCALE_FACTOR = 2.75;
-
     public BT2GS21() {
         addComponents(
                 BindingsComponent.INSTANCE,
@@ -56,8 +54,7 @@ public class BT2GS21 extends NextFTCOpMode {
     @Override
     public void onInit() {
         Configuration.ALLIANCE = Configuration.Alliance.BLUE;
-        Configuration.SHOOTER_HEIGHT_TO_GOAL = 0.95;
-        Configuration.RPM_MULTIPLER = 1.95;
+        Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.1;
 
         paths = new Paths(PedroComponent.follower());
 
@@ -234,11 +231,12 @@ public class BT2GS21 extends NextFTCOpMode {
         double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
         vt = Math.sqrt((vn * vn) + (vxr * vxr));
 
-        Configuration.TURRET_OFFSET = 0;
         Shooter.INSTANCE.updateKinematics(
                 Shooter.INSTANCE.GOAL_DISTANCE,
                 Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
         );
+
+        Configuration.TURRET_OFFSET = -1;
 
         Shooter.INSTANCE.TARGET_RPM = (Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER) * 1.1;
 

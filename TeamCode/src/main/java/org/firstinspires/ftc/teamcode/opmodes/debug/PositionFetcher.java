@@ -31,9 +31,9 @@ public class PositionFetcher extends NextFTCOpMode {
 //    private static final double START_Y = 72;
 //    private static final double START_HEADING = 270;
 
-    private static final double START_X = 26.700;
-    private static final double START_Y = 128.200;
-    private static final double START_HEADING = 135;
+    private static final double START_X = 26.070707070707073;
+    private static final double START_Y = 126.62929292929294;
+    private static final double START_HEADING = 135.5;
 
     // Saved positions list
     private final List<Pose> savedPositions = new ArrayList<>();

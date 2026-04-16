@@ -48,6 +48,7 @@ public class Shooter implements Subsystem {
 
     public double FLYWHEEL_RPM_GOAL = 0;
     public double TARGET_RPM = 0;
+    public double CURRENT_RPM = 0;
 
     public double HOOD_ANGLE = 70;
     public double HOOD_POSITION = 0.1;
@@ -133,6 +134,7 @@ public class Shooter implements Subsystem {
         flywheelMotor.setPower(controlSystem.calculate(flywheelMotor.getState()));
 
         double currentRPM = velocityToRPM(flywheelMotor.getState().getVelocity());
+        CURRENT_RPM = currentRPM;
 
         t.addLine();
         t.addData("----- Shooter Status -----", "");

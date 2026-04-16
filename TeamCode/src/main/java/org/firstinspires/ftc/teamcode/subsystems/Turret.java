@@ -25,6 +25,7 @@ public class Turret implements Subsystem {
     public ServoGroup turretServo;
 
     public double HEADING_DEGREE = 0, TARGET_DEGREE = 0, ODO_TARGET = 0, TURRET_POSITION = 0, TURRET_ANGLE = 0, TRUE_TARGET_DEGREE, ERROR = 0;
+    public boolean TURRET_IN_RANGE = false;
 
 
     public Mode mode = Mode.odometry;
@@ -90,14 +91,14 @@ public class Turret implements Subsystem {
 
         double result = 0.5 - (angle * 0.25) / 90;
 
-        if (result > 0.750) {
-            result = 0.750;
-            Light.INSTANCE.setColor(Light.RED, Light.Target.TURRET).schedule();
-        } else if (result < 0.246) {
-            Light.INSTANCE.setColor(Light.RED, Light.Target.TURRET).schedule();
-            result = 0.246;
+        if (result > 0.8) {
+            result = 0.8;
+            TURRET_IN_RANGE = false;
+        } else if (result < 0.2) {
+            TURRET_IN_RANGE = false;
+            result = 0.2;
         } else {
-            Light.INSTANCE.setColor(Light.GREEN, Light.Target.TURRET).schedule();
+            TURRET_IN_RANGE = true;
         }
 
         return result;
