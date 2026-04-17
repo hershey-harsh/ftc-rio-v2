@@ -73,9 +73,9 @@ public class ForzaBlueCompetitionSOTM extends NextFTCOpMode {
         backLeftMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         backRightMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-//        PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
+        PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
 
-        PedroComponent.follower().setStartingPose(new com.pedropathing.geometry.Pose(72, 72, Math.toRadians(270)));
+//        PedroComponent.follower().setStartingPose(new com.pedropathing.geometry.Pose(72, 72, Math.toRadians(270)));
 
         Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
 

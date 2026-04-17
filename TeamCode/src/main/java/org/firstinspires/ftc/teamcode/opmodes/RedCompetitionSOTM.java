@@ -4,6 +4,7 @@ import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -33,6 +34,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
+@Disabled
 @TeleOp(name = "Red Competition SOTM (FULL)", group = "Red")
 public class RedCompetitionSOTM extends NextFTCOpMode {
     private double X_VELOCITY = 0;
@@ -281,11 +283,13 @@ public class RedCompetitionSOTM extends NextFTCOpMode {
 
         Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
 
-        // Robot light priority: YELLOW (following path) > AZURE (3 balls) > RED (default)
+        // Robot light priority: YELLOW (following path) > AZURE (3 balls) > GREEN (1 ball) > RED (default)
         if (PedroComponent.follower().isBusy()) {
             Light.INSTANCE.setColor(Light.YELLOW, Light.Target.ROBOT).schedule();
         } else if (Transfer.INSTANCE.ALL_STOPPED) {
             Light.INSTANCE.setColor(Light.AZURE, Light.Target.ROBOT).schedule();
+        } else if (Transfer.INSTANCE.GATE12_BALL_PRESENT) {
+            Light.INSTANCE.setColor(Light.GREEN, Light.Target.ROBOT).schedule();
         } else {
             Light.INSTANCE.setColor(Light.RED, Light.Target.ROBOT).schedule();
         }

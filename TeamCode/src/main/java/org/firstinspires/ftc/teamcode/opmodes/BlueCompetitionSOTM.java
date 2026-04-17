@@ -4,6 +4,7 @@ import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -25,16 +26,15 @@ import java.util.function.Supplier;
 
 import org.firstinspires.ftc.teamcode.Configuration;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
-//import org.firstinspires.ftc.teamcode.subsystems.Light;
-//import org.firstinspires.ftc.teamcode.subsystems.Limelight;
 import org.firstinspires.ftc.teamcode.subsystems.Light;
 import org.firstinspires.ftc.teamcode.subsystems.Limelight;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
-@TeleOp(name = "(FORZA) Red Competition SOTM (FULL)", group = "Red Forza")
-public class ForzaRedCompetitionSOTM extends NextFTCOpMode {
+@Disabled
+@TeleOp(name = "Blue Competition SOTM (FULL)", group = "Blue")
+public class BlueCompetitionSOTM extends NextFTCOpMode {
     private double X_VELOCITY = 0;
     private double Y_VELOCITY = 0;
     public double TRUE_TARGET_DEGREE = 0;
@@ -54,7 +54,7 @@ public class ForzaRedCompetitionSOTM extends NextFTCOpMode {
     private Supplier<PathChain> parkPath;
 
 
-    public ForzaRedCompetitionSOTM() {
+    public BlueCompetitionSOTM() {
         addComponents(
                 BindingsComponent.INSTANCE,
                 new PedroComponent(Constants::createFollower),
@@ -75,12 +75,12 @@ public class ForzaRedCompetitionSOTM extends NextFTCOpMode {
 
         PedroComponent.follower().setStartingPose(Configuration.CURRENT_POSE);
 
-        //PedroComponent.follower().setStartingPose(new com.pedropathing.geometry.Pose(72, 72, Math.toRadians(270)));
+        PedroComponent.follower().setStartingPose(new com.pedropathing.geometry.Pose(72, 72, Math.toRadians(270)));
 
         Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
 
         Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.1;
-        Configuration.ALLIANCE = Configuration.Alliance.RED;
+        Configuration.ALLIANCE = Configuration.Alliance.BLUE;
 
         Limelight.INSTANCE.MODE = Limelight.Mode.LOCALIZATION;
         Transfer.INSTANCE.GATE12_DEBOUNCE_THRESHOLD = 3;
@@ -89,9 +89,8 @@ public class ForzaRedCompetitionSOTM extends NextFTCOpMode {
     @Override
     public void onStartButtonPressed() {
 
-        Range leftTrigger = Gamepads.gamepad1().leftTrigger();
         driverControlled = new PedroDriverControlled(
-                Gamepads.gamepad1().rightTrigger().map(rt -> rt - leftTrigger.get()),
+                Gamepads.gamepad1().leftStickY().negate(),
                 Gamepads.gamepad1().leftStickX().negate(),
                 Gamepads.gamepad1().rightStickX().negate(),
                 !Configuration.FIELD_CENTRIC
@@ -123,7 +122,7 @@ public class ForzaRedCompetitionSOTM extends NextFTCOpMode {
 
         // Lazy path — built from the robot's current pose at the moment the button is pressed
         parkPath = () -> {
-            Pose target = Configuration.RED_PARK_BR;
+            Pose target = Configuration.BLUE_PARK_BR;
             return PedroComponent.follower().pathBuilder()
                     .addPath(
                             new BezierLine(
@@ -309,60 +308,60 @@ public class ForzaRedCompetitionSOTM extends NextFTCOpMode {
         driverControlled.setScalar(Configuration.CONTROL_SCALE);
 
         if (Shooter.INSTANCE.MODE == Shooter.Mode.ODOMETRY) {
-                X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
-                Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
+            X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
+            Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
 
-                Shooter.INSTANCE.updateKinematics(
-                        Shooter.INSTANCE.GOAL_DISTANCE,
-                        Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-                );
+            Shooter.INSTANCE.updateKinematics(
+                    Shooter.INSTANCE.GOAL_DISTANCE,
+                    Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
+            );
 
-                Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.KINEMATIC_RPM_GOAL * (Configuration.RPM_MULTIPLER);
+            Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.KINEMATIC_RPM_GOAL * (Configuration.RPM_MULTIPLER);
 
-                TRUE_TARGET_DEGREE = Turret.INSTANCE.TRUE_TARGET_DEGREE;
-                double weight;
+            TRUE_TARGET_DEGREE = Turret.INSTANCE.TRUE_TARGET_DEGREE;
+            double weight;
 
-                if (!Double.isNaN(Shooter.INSTANCE.getTof())) {
-                    weight = Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME;
+            if (!Double.isNaN(Shooter.INSTANCE.getTof())) {
+                weight = Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME;
+            } else {
+                weight = 0.3;
+            }
+
+            double additionalCompensation = 0;
+            double weightCompensation = 0;
+
+            if (Y_VELOCITY < 0 || X_VELOCITY < 0) {
+                additionalCompensation = -0.35;
+                weightCompensation = -0.15;
+            }
+
+            Configuration.setAimPointOffset(-X_VELOCITY * (weight + weightCompensation), -Y_VELOCITY * (weight + weightCompensation));
+
+            double vyr = ((Y_VELOCITY * 0.0254) * Math.sin(Math.PI / 2 - TRUE_TARGET_DEGREE))
+                    + ((X_VELOCITY * 0.0254) * Math.sin(TRUE_TARGET_DEGREE));
+            double vxr = -((Y_VELOCITY * 0.0254) * Math.cos(Math.PI / 2 - TRUE_TARGET_DEGREE))
+                    + ((X_VELOCITY * 0.0254) * Math.cos(TRUE_TARGET_DEGREE));
+
+            double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
+            double vt = Math.sqrt((vn * vn) + (vxr * vxr));
+
+            Configuration.TURRET_OFFSET = Configuration.ALLIANCE == Configuration.Alliance.BLUE ? 0.5 : -0.5;
+            Shooter.INSTANCE.updateKinematics(
+                    Shooter.INSTANCE.GOAL_DISTANCE,
+                    Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
+            );
+
+            if (Configuration.CURRENT_POSE.getY() < 36) {
+                Configuration.TURRET_OFFSET = -2;
+                Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * (Configuration.RPM_MULTIPLER + 0.15);
+            } else {
+                if (Configuration.CURRENT_POSE.getX() <= 62.575 && Configuration.CURRENT_POSE.getY() > 101.762) {
+                    Configuration.TURRET_OFFSET = 2;
                 } else {
-                    weight = 0.3;
-                }
-
-                double additionalCompensation = 0;
-                double weightCompensation = 0;
-
-                if (Y_VELOCITY < 0 || X_VELOCITY < 0) {
-                    additionalCompensation = -0.35;
-                    weightCompensation = -0.15;
-                }
-
-                Configuration.setAimPointOffset(-X_VELOCITY * (weight + weightCompensation), -Y_VELOCITY * (weight + weightCompensation));
-
-                double vyr = ((Y_VELOCITY * 0.0254) * Math.sin(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                        + ((X_VELOCITY * 0.0254) * Math.sin(TRUE_TARGET_DEGREE));
-                double vxr = -((Y_VELOCITY * 0.0254) * Math.cos(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                        + ((X_VELOCITY * 0.0254) * Math.cos(TRUE_TARGET_DEGREE));
-
-                double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
-                double vt = Math.sqrt((vn * vn) + (vxr * vxr));
-
-                Configuration.TURRET_OFFSET = Configuration.ALLIANCE == Configuration.Alliance.BLUE ? 0.5 : -0.5;
-                Shooter.INSTANCE.updateKinematics(
-                        Shooter.INSTANCE.GOAL_DISTANCE,
-                        Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-                );
-
-                if (Configuration.CURRENT_POSE.getY() < 36) {
                     Configuration.TURRET_OFFSET = 0.5;
-                    Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * (Configuration.RPM_MULTIPLER + 0.15);
-                } else {
-                    if (Configuration.CURRENT_POSE.getX() <= 62.575 && Configuration.CURRENT_POSE.getY() > 101.762) {
-                        Configuration.TURRET_OFFSET = -2;
-                    } else {
-                        Configuration.TURRET_OFFSET = -0.5;
-                    }
-                    Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER;
                 }
+                Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER;
+            }
         }
 
         boolean RPM_READY = Shooter.INSTANCE.TARGET_RPM > 0
