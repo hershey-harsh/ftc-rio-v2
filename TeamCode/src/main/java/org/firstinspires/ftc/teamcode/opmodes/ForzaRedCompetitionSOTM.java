@@ -205,13 +205,13 @@ public class ForzaRedCompetitionSOTM extends NextFTCOpMode {
 
         /// ---- Gamepad 2 (Operator) ---- ///
 
-//        // D-Pad Left → Turret Offset –
-//        button(() -> gamepad2.dpad_left)
-//                .whenTrue(() -> Turret.INSTANCE.decreaseAngle().schedule());
-//
-//        // D-Pad Right → Turret Offset +
-//        button(() -> gamepad2.dpad_right)
-//                .whenTrue(() -> Turret.INSTANCE.increaseAngle().schedule());
+        // D-Pad Left → Turret Offset –
+        button(() -> gamepad2.dpad_left)
+                .whenTrue(() -> Turret.INSTANCE.decreaseAngle().schedule());
+
+        // D-Pad Right → Turret Offset +
+        button(() -> gamepad2.dpad_right)
+                .whenTrue(() -> Turret.INSTANCE.increaseAngle().schedule());
 //
 //        // D-Pad Up → Reset Turret Offset
 //        button(() -> gamepad2.dpad_up)
@@ -353,7 +353,7 @@ public class ForzaRedCompetitionSOTM extends NextFTCOpMode {
                 );
 
                 if (Configuration.CURRENT_POSE.getY() < 36) {
-                    Configuration.TURRET_OFFSET = 0.5;
+                    Configuration.TURRET_OFFSET = -2;
                     Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * (Configuration.RPM_MULTIPLER + 0.15);
                 } else {
                     if (Configuration.CURRENT_POSE.getX() <= 62.575 && Configuration.CURRENT_POSE.getY() > 101.762) {

@@ -57,6 +57,7 @@ public class BB3AH9 extends NextFTCOpMode {
 
     @Override
     public void onInit() {
+        Transfer.INSTANCE.override = true;
         Light.INSTANCE.setColor(Light.VIOLET, Light.Target.ROBOT);
         Configuration.ALLIANCE = Configuration.Alliance.BLUE;
         Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.02;
@@ -85,6 +86,7 @@ public class BB3AH9 extends NextFTCOpMode {
     @Override
     public void onStartButtonPressed() {
 
+        Transfer.INSTANCE.override = true;
         Shooter.INSTANCE.on().schedule();
         Transfer.INSTANCE.intake().schedule();
 

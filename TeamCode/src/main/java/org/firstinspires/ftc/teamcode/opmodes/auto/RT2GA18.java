@@ -57,7 +57,8 @@ public class RT2GA18 extends NextFTCOpMode {
 
     @Override
     public void onInit() {
-        Light.INSTANCE.setColor(Light.VIOLET, Light.Target.ROBOT);
+        Transfer.INSTANCE.override = true;
+        Light.INSTANCE.setColorDirect(Light.VIOLET, Light.Target.ROBOT);
         Configuration.ALLIANCE = Configuration.Alliance.RED;
         Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.1;
         //TODO: times 2.15
@@ -80,12 +81,13 @@ public class RT2GA18 extends NextFTCOpMode {
         telemetry.addData("Total Count:", "18");
 
         telemetry.update();
-        Light.INSTANCE.setBlinkingColor(Light.RED, Light.Target.ROBOT).schedule();
+        Light.INSTANCE.setBlinkingColorDirect(Light.RED, Light.Target.ROBOT);
     }
 
     @Override
     public void onStartButtonPressed() {
 
+        Transfer.INSTANCE.override = true;
         Shooter.INSTANCE.on().schedule();
         Transfer.INSTANCE.intake().schedule();
 
@@ -177,7 +179,7 @@ public class RT2GA18 extends NextFTCOpMode {
             if (IS_FOLLOWER_BUSY) {
                 Light.INSTANCE.setColor(Light.YELLOW, Light.Target.ROBOT).schedule();
             } else {
-                Light.INSTANCE.setColor(Light.RED, Light.Target.ROBOT).schedule();
+                Light.INSTANCE.setBlinkingColor(Light.RED, Light.Target.ROBOT).schedule();
             }
             WAS_FOLLOWER_BUSY = IS_FOLLOWER_BUSY;
         }

@@ -121,6 +121,7 @@ public class Transfer implements Subsystem {
 
         if (!STARTED) return;
         if (GATE_OVERRIDE) return;
+        if (override) return;
 
         if (GATE3_BALL_PRESENT) {
             GATE3_STOPPED = true;

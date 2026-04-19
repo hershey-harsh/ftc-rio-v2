@@ -4,6 +4,7 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -57,6 +58,7 @@ public class RB3AH9 extends NextFTCOpMode {
 
     @Override
     public void onInit() {
+        Transfer.INSTANCE.override = true;
         Light.INSTANCE.setColor(Light.VIOLET, Light.Target.ROBOT);
         Configuration.ALLIANCE = Configuration.Alliance.RED;
         Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.02;
@@ -85,6 +87,7 @@ public class RB3AH9 extends NextFTCOpMode {
     @Override
     public void onStartButtonPressed() {
 
+        Transfer.INSTANCE.override = true;
         Shooter.INSTANCE.on().schedule();
         Transfer.INSTANCE.intake().schedule();
 
@@ -105,20 +108,22 @@ public class RB3AH9 extends NextFTCOpMode {
                 new Delay(0.7),
                 Transfer.INSTANCE.closeGate(),
 
-                new FollowPath(paths.HumanPlayer1),
+                new FollowPath(paths.HumanPlayer2),
                 Transfer.INSTANCE.openGate(),
                 new Delay(0.7),
                 Transfer.INSTANCE.closeGate(),
 
-                new FollowPath(paths.HumanPlayer1),
+                new FollowPath(paths.HumanPlayer3),
                 Transfer.INSTANCE.openGate(),
                 new Delay(0.7),
                 Transfer.INSTANCE.closeGate(),
 
-                new FollowPath(paths.HumanPlayer1),
+                new FollowPath(paths.HumanPlayer4),
                 Transfer.INSTANCE.openGate(),
                 new Delay(0.7),
-                Transfer.INSTANCE.closeGate()
+                Transfer.INSTANCE.closeGate(),
+
+                new FollowPath(paths.Leave)
 
         ).schedule();
     }
@@ -182,7 +187,7 @@ public class RB3AH9 extends NextFTCOpMode {
         );
 
         if (Configuration.CURRENT_POSE.getY() < 36) {
-            Configuration.TURRET_OFFSET = -1.5;
+            Configuration.TURRET_OFFSET = -2;
             Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * (Configuration.RPM_MULTIPLER + 0.15);
         }
 
@@ -211,6 +216,10 @@ public class RB3AH9 extends NextFTCOpMode {
     public static class Paths {
         public PathChain R3;
         public PathChain HumanPlayer1;
+        public PathChain HumanPlayer2;
+        public PathChain HumanPlayer3;
+        public PathChain HumanPlayer4;
+        public PathChain Leave;
 
         public Paths(Follower follower) {
             R3 = follower.pathBuilder()
@@ -248,6 +257,85 @@ public class RB3AH9 extends NextFTCOpMode {
                             new Pose(82.319, 11.942)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))
+                    .build();
+
+            HumanPlayer2 = follower.pathBuilder()
+                    .addPath(new BezierLine(
+                            new Pose(82.319, 11.942),
+                            new Pose(124.146, 8.226)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))
+                    .addPath(new BezierLine(
+                            new Pose(124.146, 8.226),
+                            new Pose(120.908, 8.226)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+                    .addPath(new BezierLine(
+                            new Pose(120.908, 8.226),
+                            new Pose(124.146, 8.226)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+                    .addPath(new BezierLine(
+                            new Pose(124.146, 8.226),
+                            new Pose(82.319, 11.942)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))
+                    .build();
+
+            HumanPlayer3 = follower.pathBuilder()
+                    .addPath(new BezierLine(
+                            new Pose(82.319, 11.942),
+                            new Pose(124.146, 8.226)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))
+                    .addPath(new BezierLine(
+                            new Pose(124.146, 8.226),
+                            new Pose(120.908, 8.226)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+                    .addPath(new BezierLine(
+                            new Pose(120.908, 8.226),
+                            new Pose(124.146, 8.226)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+                    .addPath(new BezierLine(
+                            new Pose(124.146, 8.226),
+                            new Pose(82.319, 11.942)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))
+                    .build();
+
+            HumanPlayer4 = follower.pathBuilder()
+                    .addPath(new BezierLine(
+                            new Pose(82.319, 11.942),
+                            new Pose(124.146, 8.226)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))
+                    .addPath(new BezierLine(
+                            new Pose(124.146, 8.226),
+                            new Pose(120.908, 8.226)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+                    .addPath(new BezierLine(
+                            new Pose(120.908, 8.226),
+                            new Pose(124.146, 8.226)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+                    .addPath(new BezierLine(
+                            new Pose(124.146, 8.226),
+                            new Pose(82.319, 11.942)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))
+                    .build();
+
+            Leave = follower.pathBuilder()
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(82.319, 11.942),
+                                    new Pose(112.36949313328904, 11.967370501670887)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))
                     .build();
         }
     }

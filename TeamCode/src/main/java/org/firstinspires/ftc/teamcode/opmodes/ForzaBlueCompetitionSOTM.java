@@ -88,7 +88,7 @@ public class ForzaBlueCompetitionSOTM extends NextFTCOpMode {
 
     @Override
     public void onStartButtonPressed() {
-
+        Transfer.INSTANCE.override = false;
         Range leftTrigger = Gamepads.gamepad1().leftTrigger();
         driverControlled = new PedroDriverControlled(
                 Gamepads.gamepad1().rightTrigger().map(rt -> rt - leftTrigger.get()),
@@ -205,13 +205,13 @@ public class ForzaBlueCompetitionSOTM extends NextFTCOpMode {
 
         /// ---- Gamepad 2 (Operator) ---- ///
 
-//        // D-Pad Left → Turret Offset –
-//        button(() -> gamepad2.dpad_left)
-//                .whenTrue(() -> Turret.INSTANCE.decreaseAngle().schedule());
-//
-//        // D-Pad Right → Turret Offset +
-//        button(() -> gamepad2.dpad_right)
-//                .whenTrue(() -> Turret.INSTANCE.increaseAngle().schedule());
+        // D-Pad Left → Turret Offset –
+        button(() -> gamepad2.dpad_left)
+                .whenTrue(() -> Turret.INSTANCE.decreaseAngle().schedule());
+
+        // D-Pad Right → Turret Offset +
+        button(() -> gamepad2.dpad_right)
+                .whenTrue(() -> Turret.INSTANCE.increaseAngle().schedule());
 //
 //        // D-Pad Up → Reset Turret Offset
 //        button(() -> gamepad2.dpad_up)
@@ -346,17 +346,17 @@ public class ForzaBlueCompetitionSOTM extends NextFTCOpMode {
             double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
             double vt = Math.sqrt((vn * vn) + (vxr * vxr));
 
-            Configuration.TURRET_OFFSET = Configuration.ALLIANCE == Configuration.Alliance.BLUE ? 0.5 : -0.5;
+            Configuration.TURRET_OFFSET = Configuration.ALLIANCE == Configuration.Alliance.BLUE ? -0.5 : -0.5;
             Shooter.INSTANCE.updateKinematics(
                     Shooter.INSTANCE.GOAL_DISTANCE,
                     Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
             );
 
             if (Configuration.CURRENT_POSE.getY() < 36) {
-                Configuration.TURRET_OFFSET = -2;
+                Configuration.TURRET_OFFSET = -3.5;
                 Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * (Configuration.RPM_MULTIPLER + 0.15);
             } else {
-                if (Configuration.CURRENT_POSE.getX() <= 62.575 && Configuration.CURRENT_POSE.getY() > 101.762) {
+                if (Configuration.CURRENT_POSE.getX() >= 62.575 && Configuration.CURRENT_POSE.getY() < 101.762) {
                     Configuration.TURRET_OFFSET = 2;
                 } else {
                     Configuration.TURRET_OFFSET = 0.5;

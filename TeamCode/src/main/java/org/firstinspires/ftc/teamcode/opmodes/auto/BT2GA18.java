@@ -57,7 +57,8 @@ public class BT2GA18 extends NextFTCOpMode {
 
     @Override
     public void onInit() {
-        Light.INSTANCE.setColor(Light.VIOLET, Light.Target.ROBOT);
+        Transfer.INSTANCE.override = true;
+        Light.INSTANCE.setColorDirect(Light.VIOLET, Light.Target.ROBOT);
         Configuration.ALLIANCE = Configuration.Alliance.BLUE;
         Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.1;
         //TODO: times 2.15
@@ -80,12 +81,13 @@ public class BT2GA18 extends NextFTCOpMode {
         telemetry.addData("Total Count:", "18");
 
         telemetry.update();
-        Light.INSTANCE.setBlinkingColor(Light.BLUE, Light.Target.ROBOT).schedule();
+        Light.INSTANCE.setBlinkingColorDirect(Light.BLUE, Light.Target.ROBOT);
     }
 
     @Override
     public void onStartButtonPressed() {
 
+        Transfer.INSTANCE.override = true;
         Shooter.INSTANCE.on().schedule();
         Transfer.INSTANCE.intake().schedule();
 
@@ -276,7 +278,7 @@ public class BT2GA18 extends NextFTCOpMode {
                     .addPath(new BezierCurve(
                             new Pose(59.999, 76.116),
                             new Pose(35.716, 55.717),
-                            new Pose(10.5, 58.598)
+                            new Pose(10.5, 59.3)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(225), Math.toRadians(151.84))
                     .setTValueConstraint(0.95)
@@ -288,7 +290,7 @@ public class BT2GA18 extends NextFTCOpMode {
 
             Gate1_3 = follower.pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(10.5, 58.598),
+                            new Pose(10.5, 59.3),
                             new Pose(35.716, 55.717),
                             new Pose(59.999, 76.116)
                     ))
@@ -299,7 +301,7 @@ public class BT2GA18 extends NextFTCOpMode {
                     .addPath(new BezierCurve(
                             new Pose(59.999, 76.116),
                             new Pose(35.716, 55.717),
-                            new Pose(10.5, 58.598)
+                            new Pose(10.5, 59.3)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(225), Math.toRadians(151.84))
                     .setTValueConstraint(0.95)
@@ -311,7 +313,7 @@ public class BT2GA18 extends NextFTCOpMode {
 
             Gate2_2 = follower.pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(10.5, 58.598),
+                            new Pose(10.5, 59.3),
                             new Pose(35.716, 55.717),
                             new Pose(59.999, 76.116)
                     ))
@@ -322,7 +324,7 @@ public class BT2GA18 extends NextFTCOpMode {
                     .addPath(new BezierCurve(
                             new Pose(59.999, 76.116),
                             new Pose(35.716, 55.717),
-                            new Pose(10.5, 58.598)
+                            new Pose(10.5, 59.3)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(225), Math.toRadians(151.84))
                     .setTValueConstraint(0.95)
@@ -334,7 +336,7 @@ public class BT2GA18 extends NextFTCOpMode {
 
             Gate3_2 = follower.pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(10.5, 58.598),
+                            new Pose(10.5, 59.3),
                             new Pose(35.716, 55.717),
                             new Pose(59.999, 76.116)
                     ))

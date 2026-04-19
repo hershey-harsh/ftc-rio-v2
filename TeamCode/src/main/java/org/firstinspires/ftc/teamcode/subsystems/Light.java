@@ -28,7 +28,7 @@ public class Light implements Subsystem {
     private boolean TURRET_BLINK_ON = true;
     private int TURRET_BLINK_COUNT = 0, TURRET_BLINK_AMOUNT = -1;
 
-    public static final double OFF = 0.0, RED = 0.277, ORANGE = 0.333, YELLOW = 0.388;
+    public static final double OFF = 0.0, RED = 0.285, ORANGE = 0.333, YELLOW = 0.388;
     public static final double SAGE = 0.444, GREEN = 0.5, AZURE = 0.555, BLUE = 0.611;
     public static final double INDIGO = 0.666, VIOLET = 0.722, WHITE = 1.0;
 
@@ -152,6 +152,48 @@ public class Light implements Subsystem {
 
     public Command setBlinkingColor(double color) {
         return setBlinkingColor(color, 500, -1, Target.BOTH);
+    }
+
+    /** Sets blinking color immediately (no command scheduling needed). Safe to call in onInit(). */
+    public void setBlinkingColorDirect(double color, double intervalMs, int amount, Target target) {
+        if (target == Target.ROBOT || target == Target.BOTH) {
+            this.ROBOT_COLOR = color;
+            this.ROBOT_INTERVAL = intervalMs;
+            this.ROBOT_BLINK_ON = true;
+            this.ROBOT_BLINK_COUNT = 0;
+            this.ROBOT_BLINK_AMOUNT = amount;
+            ROBOT_TIMER.reset();
+        }
+        if (target == Target.TURRET || target == Target.BOTH) {
+            this.TURRET_COLOR = color;
+            this.TURRET_INTERVAL = intervalMs;
+            this.TURRET_BLINK_ON = true;
+            this.TURRET_BLINK_COUNT = 0;
+            this.TURRET_BLINK_AMOUNT = amount;
+            TURRET_TIMER.reset();
+        }
+    }
+
+    public void setBlinkingColorDirect(double color, Target target) {
+        setBlinkingColorDirect(color, 500, -1, target);
+    }
+
+    /** Sets solid color immediately (no command scheduling needed). Safe to call in onInit(). */
+    public void setColorDirect(double color, Target target) {
+        if (target == Target.ROBOT || target == Target.BOTH) {
+            this.ROBOT_COLOR = color;
+            this.ROBOT_INTERVAL = 0;
+            this.ROBOT_BLINK_ON = true;
+            this.ROBOT_BLINK_COUNT = 0;
+            this.ROBOT_BLINK_AMOUNT = -1;
+        }
+        if (target == Target.TURRET || target == Target.BOTH) {
+            this.TURRET_COLOR = color;
+            this.TURRET_INTERVAL = 0;
+            this.TURRET_BLINK_ON = true;
+            this.TURRET_BLINK_COUNT = 0;
+            this.TURRET_BLINK_AMOUNT = -1;
+        }
     }
 
     public Command off(Target target) {
