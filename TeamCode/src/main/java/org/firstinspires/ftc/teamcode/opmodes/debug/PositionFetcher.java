@@ -23,6 +23,7 @@ import org.firstinspires.ftc.teamcode.Configuration;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 
+@Disabled
 @TeleOp(name = "Position Fetcher (Debug)", group = "Debug")
 public class PositionFetcher extends NextFTCOpMode {
     double LOOP_TIME = 0;
@@ -117,7 +118,7 @@ public class PositionFetcher extends NextFTCOpMode {
 
         telemetry.addLine("");
         telemetry.addData("Loop Time (ms)", String.format(Locale.US, "%.2f", LOOP_TIME));
-        telemetry.addData("Loop Rate (hz)", String.format(Locale.US, "%.1f", 1000.0 / LOOP_TIME));
+        telemetry.addData("Loop Rate (hz)", LOOP_TIME > 0 ? String.format(Locale.US, "%.1f", 1000.0 / LOOP_TIME) : "---");
 
         telemetry.update();
 

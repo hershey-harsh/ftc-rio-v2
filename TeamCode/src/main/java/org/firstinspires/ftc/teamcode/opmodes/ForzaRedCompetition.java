@@ -299,7 +299,7 @@ public class ForzaRedCompetition extends NextFTCOpMode {
         }
 
         telemetry.addData("Loop Time (ms)", LOOP_TIME);
-        telemetry.addData("Loop Time (hz)", (1000/LOOP_TIME));
+        telemetry.addData("Loop Time (hz)", LOOP_TIME > 0 ? (1000 / LOOP_TIME) : 0);
 
         telemetry.addData("X", Configuration.CURRENT_POSE.getX());
         telemetry.addData("Y", Configuration.CURRENT_POSE.getY());

@@ -20,6 +20,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
+@Disabled
 @TeleOp(name = "Shot", group = "Debug")
 public class ShooterDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;

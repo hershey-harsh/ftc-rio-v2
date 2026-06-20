@@ -20,6 +20,7 @@ import dev.nextftc.ftc.NextFTCOpMode;
 
 import org.firstinspires.ftc.teamcode.Configuration;
 import org.firstinspires.ftc.teamcode.subsystems.Light;
+import org.firstinspires.ftc.teamcode.subsystems.AimController;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
@@ -60,7 +61,7 @@ public class BT2GA18 extends NextFTCOpMode {
         Transfer.INSTANCE.override = true;
         Light.INSTANCE.setColorDirect(Light.VIOLET, Light.Target.ROBOT);
         Configuration.ALLIANCE = Configuration.Alliance.BLUE;
-        Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.1;
+        Configuration.SHOOTER_HEIGHT_TO_GOAL = 0.95;
         //TODO: times 2.15
 
         paths = new Paths(PedroComponent.follower());
@@ -189,46 +190,18 @@ public class BT2GA18 extends NextFTCOpMode {
         X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
         Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
 
+        // Static aiming only — no shoot-on-the-move. Matches RT2GA18 exactly (red was static
+        // while this stayed on SOTM, whose post-stop velocity decay pulled the virtual target
+        // toward the goal and dropped the RPM -> blue was shooting short). This auto stops at
+        // each launch position before opening the gate, so aim straight at the goal.
+        Configuration.setAimPointOffset(0, 0);       // no virtual-target velocity lead
+        AimController.clearPrediction();             // no predictive turret lead / zone offset
         Shooter.INSTANCE.updateKinematics(
                 Shooter.INSTANCE.GOAL_DISTANCE,
-                Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-        );
-
-        Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.KINEMATIC_RPM_GOAL * Configuration.RPM_MULTIPLER;
-
-        TRUE_TARGET_DEGREE = Turret.INSTANCE.TRUE_TARGET_DEGREE;
-        double weight;
-
-        if (!Double.isNaN(Shooter.INSTANCE.getTof())) {
-            weight = (Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME) - 0.9;
-        } else {
-            weight = 0.3;
-        }
-
-        Configuration.setAimPointOffset(-X_VELOCITY * weight, -Y_VELOCITY * weight);
-
-        double vyr = ((Y_VELOCITY * 0.0254) * Math.sin(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                + ((X_VELOCITY * 0.0254) * Math.sin(TRUE_TARGET_DEGREE));
-        double vxr = -((Y_VELOCITY * 0.0254) * Math.cos(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                + ((X_VELOCITY * 0.0254) * Math.cos(TRUE_TARGET_DEGREE));
-
-        double additionalCompensation = 0;
-
-        if (Y_VELOCITY < 0 || X_VELOCITY < 0) {
-            additionalCompensation = -0.5;
-        }
-
-        double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
-        vt = Math.sqrt((vn * vn) + (vxr * vxr));
-
-        Shooter.INSTANCE.updateKinematics(
-                Shooter.INSTANCE.GOAL_DISTANCE,
-                Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-        );
-
-        Configuration.TURRET_OFFSET = -1;
-
-        Shooter.INSTANCE.TARGET_RPM = (Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER);
+                Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE));
+        Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.getKinematicRPMGoal() * Configuration.RPM_MULTIPLER;
+        Configuration.TURRET_OFFSET = -0.25;           // mirror of RT2GA18 (red 0.25 -> blue -0.25)
+        Shooter.INSTANCE.TARGET_RPM *= 1.025;          // mirror of RT2GA18 RPM bump
 
         telemetry.addLine("=== Position ===");
         telemetry.addData("X", PedroComponent.follower().getPose().getX());

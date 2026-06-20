@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.Configuration;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Limelight;
 
+@Disabled
 @TeleOp(name = "Fusion Localizer", group = "Debug")
 public class FusionLocalizerDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;

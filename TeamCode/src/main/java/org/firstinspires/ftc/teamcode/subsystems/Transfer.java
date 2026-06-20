@@ -6,9 +6,12 @@ import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Configuration;
+
+import java.util.Locale;
 
 import dev.nextftc.core.commands.Command;
 import dev.nextftc.core.commands.utility.InstantCommand;
@@ -51,6 +54,18 @@ public class Transfer implements Subsystem {
     private boolean STARTED = false;             // true after intake() is called — prevents running during init
     private static final double GATE3_THRESHOLD = 8;  // cm
 
+    // Gate 3 motor stall protection — backstop against burnout when a ball blocks the wheel
+    // and the distance sensor misses it. Runs in ALL modes, including auto/override where the
+    // functional auto-stop below is bypassed (that's where it stalled/burned before). Sustained
+    // current above GATE3_STALL_CURRENT for GATE3_STALL_TIME latches the motor off until a gate
+    // command (open/close) clears it. Tune the threshold to the motor with the "Gate3 Motor (A)"
+    // telemetry: set it a bit above the normal free-running draw, below the stall draw.
+    public static double GATE3_STALL_CURRENT = 5.0;   // amps
+    public static double GATE3_STALL_TIME = 0.4;      // seconds of sustained overcurrent
+    public static double gate3MotorCurrent = 0;       // last reading (telemetry)
+    public boolean GATE3_MOTOR_STALLED = false;       // latched: motor cut due to stall
+    private final ElapsedTime gate3StallTimer = new ElapsedTime();
+
     // Gate 1&2 break beam debounce — sensor is noisy when ball is present (toggles 3-4x in ~2s)
     // count rising edges (transitions from false→true) in a rolling window.
     // If see enough edges within the window latch GATE12_BALL_PRESENT = true.
@@ -82,6 +97,8 @@ public class Transfer implements Subsystem {
         GATE3_STOPPED = false;
         GATE3_BALL_PRESENT = false;
         ALL_STOPPED = false;
+        GATE3_MOTOR_STALLED = false;
+        gate3StallTimer.reset();
         GATE12_BALL_PRESENT = false;
         gate12LastRawState = false;
         gate12TransitionCount = 0;
@@ -92,6 +109,23 @@ public class Transfer implements Subsystem {
 
     @Override
     public void periodic() {
+        // --- Gate 3 motor stall protection (runs in ALL modes — burnout backstop) ---
+        // Must come before the override/STARTED early-returns below, because the worst stalls
+        // happened in auto (override == true), where the functional auto-stop never runs.
+        gate3MotorCurrent = transferMotor2.getMotor().getCurrent(CurrentUnit.AMPS);
+        if (GATE3_MOTOR_STALLED) {
+            transferMotor2.setPower(0);                       // hold off until a gate command clears it
+        } else if (gate3MotorCurrent >= GATE3_STALL_CURRENT) {
+            if (gate3StallTimer.seconds() >= GATE3_STALL_TIME) {
+                transferMotor2.setPower(0);
+                GATE3_MOTOR_STALLED = true;
+                GATE3_BALL_PRESENT = true;                    // a jam IS a ball the sensor missed
+                GATE3_STOPPED = true;
+            }
+        } else {
+            gate3StallTimer.reset();                          // current normal → restart the stall clock
+        }
+
         gate3Distance = gate3Sensor.getDistance(DistanceUnit.CM);
 
         if (!GATE3_BALL_PRESENT && gate3Distance < GATE3_THRESHOLD) {
@@ -118,6 +152,14 @@ public class Transfer implements Subsystem {
             }
         }
         gate12LastRawState = gate12Raw;
+
+        Telemetry t = ActiveOpMode.telemetry();
+        t.addLine();
+        t.addData("----- Transfer Status -----", "");
+        t.addData("Gate3 Motor (A)", String.format(Locale.US, "%.2f", gate3MotorCurrent));
+        t.addData("Gate3 Stalled", GATE3_MOTOR_STALLED);
+        t.addData("Gate3 Ball Present", GATE3_BALL_PRESENT);
+        t.addData("Gate1&2 Ball Present", GATE12_BALL_PRESENT);
 
         if (!STARTED) return;
         if (GATE_OVERRIDE) return;
@@ -223,6 +265,8 @@ public class Transfer implements Subsystem {
             if (!Shooter.INSTANCE.isUpToSpeed()) return;
 
             GATE_OVERRIDE = true;
+            GATE3_MOTOR_STALLED = false;
+            gate3StallTimer.reset();
             GATE3_STOPPED = false;
             GATE3_BALL_PRESENT = false;
             ALL_STOPPED = false;
@@ -241,6 +285,8 @@ public class Transfer implements Subsystem {
     public Command closeGate() {
         return new InstantCommand(() -> {
             GATE_OVERRIDE = false;
+            GATE3_MOTOR_STALLED = false;
+            gate3StallTimer.reset();
             GATE3_STOPPED = false;
             GATE3_BALL_PRESENT = false;
             ALL_STOPPED = false;
