@@ -20,6 +20,7 @@ import dev.nextftc.ftc.NextFTCOpMode;
 
 import org.firstinspires.ftc.teamcode.Configuration;
 import org.firstinspires.ftc.teamcode.subsystems.Light;
+import org.firstinspires.ftc.teamcode.subsystems.AimController;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
@@ -58,7 +59,7 @@ public class BB3AH9 extends NextFTCOpMode {
     @Override
     public void onInit() {
         Transfer.INSTANCE.override = true;
-        Light.INSTANCE.setColor(Light.VIOLET, Light.Target.ROBOT);
+        Light.INSTANCE.setColor(Light.VIOLET, Light.Target.ROBOT).schedule();
         Configuration.ALLIANCE = Configuration.Alliance.BLUE;
         Configuration.SHOOTER_HEIGHT_TO_GOAL = 1.02;
 
@@ -145,48 +146,14 @@ public class BB3AH9 extends NextFTCOpMode {
         X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
         Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
 
-        Shooter.INSTANCE.updateKinematics(
-                Shooter.INSTANCE.GOAL_DISTANCE,
-                Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-        );
-
-        Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.KINEMATIC_RPM_GOAL * (Configuration.RPM_MULTIPLER);
-
-        TRUE_TARGET_DEGREE = Turret.INSTANCE.TRUE_TARGET_DEGREE;
-        double weight;
-
-        if (!Double.isNaN(Shooter.INSTANCE.getTof())) {
-            weight = Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME;
-        } else {
-            weight = 0.3;
-        }
-
-        double additionalCompensation = 0;
-        double weightCompensation = 0;
-
-        if (Y_VELOCITY < 0 || X_VELOCITY < 0) {
-            additionalCompensation = -0.35;
-            weightCompensation = -0.15;
-        }
-
-        Configuration.setAimPointOffset(-X_VELOCITY * (weight + weightCompensation), -Y_VELOCITY * (weight + weightCompensation));
-
-        double vyr = ((Y_VELOCITY * 0.0254) * Math.sin(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                + ((X_VELOCITY * 0.0254) * Math.sin(TRUE_TARGET_DEGREE));
-        double vxr = -((Y_VELOCITY * 0.0254) * Math.cos(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                + ((X_VELOCITY * 0.0254) * Math.cos(TRUE_TARGET_DEGREE));
-
-        double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
-        double vt = Math.sqrt((vn * vn) + (vxr * vxr));
-
-        Shooter.INSTANCE.updateKinematics(
-                Shooter.INSTANCE.GOAL_DISTANCE,
-                Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-        );
+        // Static aiming only — no shoot-on-the-move. Keeps the SOTM-tuned zone logic
+        // (far-shoot goal pose + far turret/RPM offsets, and the offset-zone nudge) but
+        // drops the predictive moving-shot lead; this auto fires while stopped.
+        AimController.updateStaticAim();
 
         if (Configuration.CURRENT_POSE.getY() < 36) {
-            Configuration.TURRET_OFFSET = -3;
-            Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * (Configuration.RPM_MULTIPLER + 0.15);
+            Configuration.TURRET_OFFSET = 2;   // mirror of RB3AH9 (red -2 -> blue +2)
+            Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.getKinematicRPMGoal() * (Configuration.RPM_MULTIPLER + 0.15);
         }
 
         telemetry.addLine("=== Position ===");

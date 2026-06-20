@@ -30,6 +30,7 @@ import org.firstinspires.ftc.teamcode.pedro.Constants;
 //import org.firstinspires.ftc.teamcode.subsystems.Limelight;
 import org.firstinspires.ftc.teamcode.subsystems.Light;
 import org.firstinspires.ftc.teamcode.subsystems.Limelight;
+import org.firstinspires.ftc.teamcode.subsystems.AimController;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
@@ -299,7 +300,7 @@ public class ForzaRedCompetitionHalfSOTM extends NextFTCOpMode {
         }
 
         telemetry.addData("Loop Time (ms)", LOOP_TIME);
-        telemetry.addData("Loop Time (hz)", (1000/LOOP_TIME));
+        telemetry.addData("Loop Time (hz)", LOOP_TIME > 0 ? (1000 / LOOP_TIME) : 0);
 
         telemetry.addData("X", Configuration.CURRENT_POSE.getX());
         telemetry.addData("Y", Configuration.CURRENT_POSE.getY());
@@ -311,59 +312,16 @@ public class ForzaRedCompetitionHalfSOTM extends NextFTCOpMode {
         if (Shooter.INSTANCE.MODE == Shooter.Mode.ODOMETRY) {
             if (Configuration.CURRENT_POSE.getY() < 36) {
                 Configuration.setAimPointOffset(0, 0);
+                AimController.clearPrediction();
                 Shooter.INSTANCE.TARGET_RPM = 4100;
                 Configuration.TURRET_OFFSET = 0.5;
             } else {
                 X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
                 Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
 
-                Shooter.INSTANCE.updateKinematics(
-                        Shooter.INSTANCE.GOAL_DISTANCE,
-                        Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-                );
-
-                Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.KINEMATIC_RPM_GOAL * (Configuration.RPM_MULTIPLER);
-
-                TRUE_TARGET_DEGREE = Turret.INSTANCE.TRUE_TARGET_DEGREE;
-                double weight;
-
-                if (!Double.isNaN(Shooter.INSTANCE.getTof())) {
-                    weight = Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME;
-                } else {
-                    weight = 0.3;
-                }
-
-                double additionalCompensation = 0;
-                double weightCompensation = 0;
-
-                if (Y_VELOCITY < 0 || X_VELOCITY < 0) {
-                    additionalCompensation = -0.35;
-                    weightCompensation = -0.15;
-                }
-
-                Configuration.setAimPointOffset(-X_VELOCITY * (weight + weightCompensation), -Y_VELOCITY * (weight + weightCompensation));
-
-                double vyr = ((Y_VELOCITY * 0.0254) * Math.sin(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                        + ((X_VELOCITY * 0.0254) * Math.sin(TRUE_TARGET_DEGREE));
-                double vxr = -((Y_VELOCITY * 0.0254) * Math.cos(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                        + ((X_VELOCITY * 0.0254) * Math.cos(TRUE_TARGET_DEGREE));
-
-                double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
-                double vt = Math.sqrt((vn * vn) + (vxr * vxr));
-
-                Configuration.TURRET_OFFSET = Configuration.ALLIANCE == Configuration.Alliance.BLUE ? 0.5 : -0.5;
-                Shooter.INSTANCE.updateKinematics(
-                        Shooter.INSTANCE.GOAL_DISTANCE,
-                        Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-                );
-
+                // Far: shoot-on-the-move via virtual-target lead (any translation direction).
+                AimController.updateShootOnMove(X_VELOCITY, Y_VELOCITY);
                 Configuration.TURRET_OFFSET = -0.5;
-
-                if (Configuration.CURRENT_POSE.getX() <= 62.575 && Configuration.CURRENT_POSE.getY() > 101.762) {
-                    Configuration.TURRET_OFFSET = -2;
-                }
-
-                Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER;
             }
         }
 

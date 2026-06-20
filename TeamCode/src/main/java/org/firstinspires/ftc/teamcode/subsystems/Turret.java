@@ -20,6 +20,16 @@ public class Turret implements Subsystem {
     public static double ANGLE_INCREMENT = 1.0;
     public static double BACKLASH_COMP_DEGREES = 2; // pre-load gears to take up backlash slack
 
+    // Turret servo travel limits — THESE set the usable aim range. With the 0.25/90 deg→servo
+    // scale: [0.2, 0.8] = ±108°, [0.1, 0.9] = ±144°, [0.04, 0.93] ≈ the ±155-165° hard limits
+    // declared by the angle clamp in interpolateAngle(). The turret "clamps to one side / stops
+    // following" when the goal swings past this range (e.g. goal behind the robot). Default is
+    // widened to ±144° (well inside the declared mechanical limit) so it tracks across far more
+    // of the field. If the servo buzzes/strains at the ends, narrow these (live via SOTM Tuner);
+    // if your turret can safely go further, widen toward [0.04, 0.93]. Tune ON the robot.
+    public static double MIN_SERVO_POS = 0.1;
+    public static double MAX_SERVO_POS = 0.9;
+
     public ServoEx turretServo1;
     public ServoEx turretServo2;
     public ServoGroup turretServo;
@@ -45,6 +55,8 @@ public class Turret implements Subsystem {
         turretServo2.getServo().getController().pwmEnable();
 
         mode = Mode.odometry;
+        Configuration.TURRET_PREDICTIVE_OFFSET = 0;
+        Configuration.TURRET_ZONE_OFFSET = 0;
         setAngle(0);
     }
 
@@ -69,7 +81,9 @@ public class Turret implements Subsystem {
             double newTarget = Math.toDegrees(ODO_TARGET) - HEADING_DEGREE;
             TARGET_DEGREE = newTarget;
             TRUE_TARGET_DEGREE = newTarget;
-            setAngle(TARGET_DEGREE + Configuration.TURRET_OFFSET);
+            // Mechanical offset + predictive rotational lead + zone offset (set by AimController).
+            setAngle(TARGET_DEGREE + Configuration.TURRET_OFFSET
+                    + Configuration.TURRET_PREDICTIVE_OFFSET + Configuration.TURRET_ZONE_OFFSET);
         } else if (mode == Mode.manual) {
             setAngle(TARGET_DEGREE + Configuration.TURRET_OFFSET);
         }
@@ -91,12 +105,12 @@ public class Turret implements Subsystem {
 
         double result = 0.5 - (angle * 0.25) / 90;
 
-        if (result > 0.8) {
-            result = 0.8;
+        if (result > MAX_SERVO_POS) {
+            result = MAX_SERVO_POS;
             TURRET_IN_RANGE = false;
-        } else if (result < 0.2) {
+        } else if (result < MIN_SERVO_POS) {
             TURRET_IN_RANGE = false;
-            result = 0.2;
+            result = MIN_SERVO_POS;
         } else {
             TURRET_IN_RANGE = true;
         }

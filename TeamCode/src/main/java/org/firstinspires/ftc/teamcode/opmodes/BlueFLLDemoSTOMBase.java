@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opmodes;
 
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -9,6 +10,7 @@ import org.firstinspires.ftc.teamcode.Configuration;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Light;
 import org.firstinspires.ftc.teamcode.subsystems.Limelight;
+import org.firstinspires.ftc.teamcode.subsystems.AimController;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
@@ -25,6 +27,7 @@ import dev.nextftc.hardware.driving.DriverControlledCommand;
 import dev.nextftc.hardware.impl.MotorEx;
 import static dev.nextftc.bindings.Bindings.button;
 
+@Disabled
 @TeleOp(name = "Blue FLL Demo", group = "AA FLL Demo")
 public class BlueFLLDemoSTOMBase extends NextFTCOpMode {
     private double X_VELOCITY = 0;
@@ -191,57 +194,16 @@ public class BlueFLLDemoSTOMBase extends NextFTCOpMode {
             X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
             Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
 
-            Shooter.INSTANCE.updateKinematics(
-                    Shooter.INSTANCE.GOAL_DISTANCE,
-                    Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-            );
-
-            Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.KINEMATIC_RPM_GOAL * (Configuration.RPM_MULTIPLER);
-
-            TRUE_TARGET_DEGREE = Turret.INSTANCE.TRUE_TARGET_DEGREE;
-            double weight;
-
-            if (!Double.isNaN(Shooter.INSTANCE.getTof())) {
-                weight = Shooter.INSTANCE.getTof() + Configuration.ARTIFACT_TRANSFER_TIME;
-            } else {
-                weight = 0.3;
-            }
-
-            double additionalCompensation = 0;
-            double weightCompensation = 0;
-
-            if (Y_VELOCITY < 0 || X_VELOCITY < 0) {
-                additionalCompensation = -0.35;
-                weightCompensation = -0.15;
-            }
-
-            Configuration.setAimPointOffset(-X_VELOCITY * (weight + weightCompensation), -Y_VELOCITY * (weight + weightCompensation));
-
-            double vyr = ((Y_VELOCITY * 0.0254) * Math.sin(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                    + ((X_VELOCITY * 0.0254) * Math.sin(TRUE_TARGET_DEGREE));
-            double vxr = -((Y_VELOCITY * 0.0254) * Math.cos(Math.PI / 2 - TRUE_TARGET_DEGREE))
-                    + ((X_VELOCITY * 0.0254) * Math.cos(TRUE_TARGET_DEGREE));
-
-            double vn = Shooter.INSTANCE.shooterVKinematic() + (vyr * (Configuration.VELOCITY_COMPENSATION_WEIGHT + additionalCompensation));
-            double vt = Math.sqrt((vn * vn) + (vxr * vxr));
-
-            Configuration.TURRET_OFFSET = Configuration.ALLIANCE == Configuration.Alliance.BLUE ? -0.5 : -0.5;
-            Shooter.INSTANCE.updateKinematics(
-                    Shooter.INSTANCE.GOAL_DISTANCE,
-                    Math.toRadians(Shooter.INSTANCE.HOOD_ANGLE)
-            );
+            // Shoot-on-the-move: virtual-target lead (shared with the competition opmodes).
+            AimController.updateShootOnMove(X_VELOCITY, Y_VELOCITY);
 
             if (Configuration.CURRENT_POSE.getY() < 36) {
-//                Configuration.TURRET_OFFSET = -3.5;
+                // Close range: small mechanical aim offset + slightly hotter wheel.
                 Configuration.TURRET_OFFSET = -1;
-                Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * (Configuration.RPM_MULTIPLER + 0.15);
+                Shooter.INSTANCE.TARGET_RPM = Shooter.INSTANCE.getKinematicRPMGoal() * (Configuration.RPM_MULTIPLER + 0.15);
             } else {
-                if (Configuration.CURRENT_POSE.getX() >= 62.575 && Configuration.CURRENT_POSE.getY() < 101.762) {
-                    Configuration.TURRET_OFFSET = 2;
-                } else {
-                    Configuration.TURRET_OFFSET = 0.5;
-                }
-                Shooter.INSTANCE.TARGET_RPM = Shooter.artifactVelocityMStoRPM(vt) * Configuration.RPM_MULTIPLER;
+                // Far: mechanical aim offset only — the lead is handled by AimController.
+                Configuration.TURRET_OFFSET = 0.5;
             }
         }
 
