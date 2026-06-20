@@ -20,6 +20,7 @@ import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
+@Disabled
 @TeleOp(name = "Turret", group = "Debug")
 public class TurretDebug extends NextFTCOpMode {
     double LOOP_TIME = 0;
@@ -120,7 +121,7 @@ public class TurretDebug extends NextFTCOpMode {
 
         // Loop timing
         telemetry.addData("Loop Time (ms)", LOOP_TIME);
-        telemetry.addData("Loop Time (hz)", (1000/LOOP_TIME));
+        telemetry.addData("Loop Time (hz)", LOOP_TIME > 0 ? (1000 / LOOP_TIME) : 0);
 
         Configuration.CURRENT_POSE = PedroComponent.follower().getPose();
 

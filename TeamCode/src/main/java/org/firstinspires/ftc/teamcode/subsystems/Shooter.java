@@ -36,6 +36,23 @@ public class Shooter implements Subsystem {
     public static double HOOD_INCREMENT = 0.05;
     public static double RPM_INCREMENT = 100.0;
 
+    // ---- Rapid-fire RPM-droop hood compensation -------------------------------------
+    // Launching 3 artifacts in quick succession transiently droops flywheel RPM below
+    // target (energy is pulled out faster than the motors + 1.4 kg flywheel restore it).
+    // Boosting the RPM target would overshoot the goal when NOT drooping, so instead we
+    // keep the RPM target exact and lift the *commanded* hood toward the lower-required-
+    // speed angle by an amount proportional to the MEASURED RPM deficit, so the slower
+    // artifact still reaches the goal. The direction is read from the trajectory model
+    // itself (probe +/- a few degrees) so it is correct in every regime and self-limits at
+    // the minimum-speed angle. Zero when up to speed; bounded + smoothed. Tune on the bot.
+    public static boolean DROOP_COMP_ENABLED = true;
+    public static double DROOP_RPM_DEADBAND = 150.0;     // ignore deficits below this (RPM)
+    public static double HOOD_DROOP_GAIN = 0.005;        // hood degrees per RPM of deficit
+    public static double MAX_HOOD_DROOP_COMP = 6.0;      // clamp on the comp (deg)
+    public static double DROOP_COMP_LOWPASS = 0.25;      // smoothing (0..1)
+    public static double DROOP_MIN_RPM_FRACTION = 0.6;   // only compensate once past spin-up
+    private double droopCompFiltered = 0;
+
     public MotorEx flywheelMotor1;
     public MotorEx flywheelMotor2;
     public MotorGroup flywheelMotor;
@@ -54,6 +71,10 @@ public class Shooter implements Subsystem {
     public double HOOD_POSITION = 0.1;
     public double MIN_HOOD_ANGLE = 43.0;
     public double MAX_HOOD_ANGLE = 70.0;
+    // Global hood (entry-angle) trim added to the LUT in odometry mode. NEGATIVE = flatter
+    // arc + higher RPM (the trajectory solve commands more speed for a flatter shot), so use
+    // it to make shots "sharper". Bounded by [MIN_HOOD_ANGLE, MAX_HOOD_ANGLE]. Tune live.
+    public static double HOOD_TRIM = 0.0;
 
     public Mode MODE = Mode.ODOMETRY, LAST_MODE = null;
     public boolean DEBUG_TELEMETRY = false;
@@ -121,12 +142,16 @@ public class Shooter implements Subsystem {
         }
 
         if (MODE == Mode.ODOMETRY) {
-            HOOD_ANGLE = getHoodAngle(GOAL_DISTANCE);
-            if (Configuration.CURRENT_POSE.getY() < 36) {
-                Shooter.INSTANCE.setHoodAngle(43);
-            } else {
-                Shooter.INSTANCE.setHoodAngle(HOOD_ANGLE);
-            }
+            // Nominal hood = LUT (or 43 close) + HOOD_TRIM; drives the RPM solve via HOOD_ANGLE.
+            // Lowering HOOD_TRIM flattens the arc and the solve commands more RPM automatically.
+            double nominal = (Configuration.CURRENT_POSE.getY() < 36) ? 43 : getHoodAngle(GOAL_DISTANCE);
+            HOOD_ANGLE = Math.max(MIN_HOOD_ANGLE, Math.min(MAX_HOOD_ANGLE, nominal + HOOD_TRIM));
+            // Command the servo with rapid-fire droop compensation added on top, WITHOUT
+            // disturbing HOOD_ANGLE (keeps RPM and hood decoupled — no feedback loop).
+            double servoHood = HOOD_ANGLE + droopHoodComp(GOAL_DISTANCE, HOOD_ANGLE);
+            servoHood = Math.max(MIN_HOOD_ANGLE, Math.min(MAX_HOOD_ANGLE, servoHood));
+            HOOD_POSITION = 0.1 + (70 - servoHood) * (0.9 / 27.0);
+            hoodServo.setPosition(HOOD_POSITION);
         }
 
         double targetVelocity = rpmToVelocity(TARGET_RPM);
@@ -218,6 +243,57 @@ public class Shooter implements Subsystem {
         HOOD_ANGLE = degrees;
         HOOD_POSITION = 0.1 + (70 - degrees) * (0.9 / 27.0);
         hoodServo.setPosition(HOOD_POSITION);
+    }
+
+    /**
+     * Pure trajectory model (no side effects): the artifact speed required to pass through
+     * the goal at {@code distMeters} with entry/hood angle {@code hoodAngleRad}. Mirrors
+     * {@link #updateKinematics} but returns the value instead of mutating fields, so the
+     * droop compensator can probe it. Returns NaN if the shot is geometrically unsolvable.
+     */
+    public static double requiredEntrySpeed(double distMeters, double hoodAngleRad) {
+        double H = Configuration.SHOOTER_HEIGHT_TO_GOAL;
+        double aa = (-distMeters * Math.tan(hoodAngleRad) + H) / (distMeters * distMeters);
+        double bb = -Math.tan(hoodAngleRad) - (2 * aa * distMeters);
+        double nn = -bb / (2 * aa);
+        double mm = (aa * nn * nn) + (bb * nn) + H;
+        if (mm < 0 || mm < H) return Double.NaN;
+        double tu = Math.sqrt((2 * mm) / 9.8);
+        double tg = Math.sqrt((2 * (mm - H)) / 9.8);
+        double flight = tu + tg;
+        if (flight <= 0 || Double.isNaN(flight)) return Double.NaN;
+        double vx = distMeters / flight;
+        double vy = (mm + 4.9 * tu * tu) / tu;
+        return Math.sqrt(vx * vx + vy * vy);
+    }
+
+    /**
+     * Velocity-aware hood compensation for rapid-fire RPM droop. Returns the extra hood
+     * degrees to add to the nominal angle: proportional to the measured RPM deficit and in
+     * the model-derived direction that lowers the required artifact speed, so a drooping
+     * flywheel can still reach the goal. Zero when up to speed, during spin-up, or disabled.
+     */
+    private double droopHoodComp(double distMeters, double baseHoodDeg) {
+        if (!DROOP_COMP_ENABLED || TARGET_RPM <= 0
+                || CURRENT_RPM < DROOP_MIN_RPM_FRACTION * TARGET_RPM) {
+            droopCompFiltered = 0;
+            return 0;
+        }
+        double deficit = TARGET_RPM - CURRENT_RPM;   // > 0 while drooping
+        double raw = 0;
+        if (deficit > DROOP_RPM_DEADBAND) {
+            double th = Math.toRadians(baseHoodDeg);
+            double eps = Math.toRadians(2.0);
+            double v0 = requiredEntrySpeed(distMeters, th);
+            double v1 = requiredEntrySpeed(distMeters, th + eps);
+            if (!Double.isNaN(v0) && !Double.isNaN(v1)) {
+                double dir = (v1 < v0) ? 1.0 : -1.0;   // move hood the way that needs less speed
+                raw = dir * HOOD_DROOP_GAIN * (deficit - DROOP_RPM_DEADBAND);
+                raw = Math.max(-MAX_HOOD_DROOP_COMP, Math.min(MAX_HOOD_DROOP_COMP, raw));
+            }
+        }
+        droopCompFiltered = DROOP_COMP_LOWPASS * raw + (1 - DROOP_COMP_LOWPASS) * droopCompFiltered;
+        return droopCompFiltered;
     }
 
     public Command on() {
