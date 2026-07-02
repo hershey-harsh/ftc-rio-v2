@@ -143,6 +143,9 @@ public final class AimController {
      * the tuned zones and goal pose without leading a moving shot. Call once per loop in
      * odometry mode; apply any per-opmode mechanical {@code TURRET_OFFSET} / RPM tweak after.
      */
+
+
+
     public static void updateStaticAim() {
         Shooter s = Shooter.INSTANCE;
         Pose pose = Configuration.CURRENT_POSE;
@@ -156,7 +159,7 @@ public final class AimController {
             Configuration.setAimPointOffset(g.getX() - base.getX(), g.getY() - base.getY());
             Configuration.TURRET_ZONE_OFFSET = red
                     ? Configuration.FAR_SHOOT_TURRET_OFFSET        // RED
-                    : -Configuration.FAR_SHOOT_TURRET_OFFSET;      // BLUE
+                    : -Configuration.FAR_SHOOT_TURRET_OFFSET - 2.75;      // BLUE
             Configuration.TURRET_PREDICTIVE_OFFSET = 0;
             lastOffsetX = Configuration.X_GOAL_OFFSET;
             lastOffsetY = Configuration.Y_GOAL_OFFSET;

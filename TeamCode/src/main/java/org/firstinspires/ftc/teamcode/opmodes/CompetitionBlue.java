@@ -49,13 +49,14 @@ import org.firstinspires.ftc.teamcode.subsystems.Turret;
  * </ul>
  *
  * <pre>
- * GAMEPAD 1 (Driver)
- *   Right trigger - Left trigger   forward / back        Left stick X   strafe
- *   Right stick X                  rotate
- *   D-pad Up      auto gate run (to gate -> back, auto-opens on close-shoot-zone entry)
- *   D-pad Down    break / cancel automation (disarms the gate run)
+ * GAMEPAD 1 (Driver)   (base = Forza drive: right trigger - left trigger = fwd/back, left stick X = strafe;
+ *                       the "(Normal)" variants use left stick Y/X instead. Right stick X = rotate.)
+ *   Y             auto gate run (to gate -> back, auto-opens on close-shoot-zone entry)
+ *   X             cancel following but KEEP the auto-open armed (gate still opens on zone entry)
+ *   A             toggle shoot-on-the-move on/off (off = static aim, no predictive lead)
+ *   Right bumper  FIRE (hold = open gate, release = close)
  *   D-pad Right   auto-drive to park        D-pad Left   relocalize to alliance human-player pose
- *   X / B         force BLUE / RED alliance         Back   emergency stop (toggle)
+ *   Back          emergency stop (toggle)
  *
  * GAMEPAD 2 (Operator)
  *   D-pad Left / Right   turret offset trim -/+ (persistent)     D-pad Up   reset trim
@@ -100,6 +101,11 @@ public class CompetitionBlue extends NextFTCOpMode {
     private boolean wasInZone = false;     // previous-loop zone membership (for the entry edge)
     private final ElapsedTime gateOpenTimer = new ElapsedTime();
 
+    // ---- Shoot-on-the-move toggle (gamepad 1 A) -------------------------------------------
+    // true  -> AimController.updateShootOnMove (predictive lead while driving)
+    // false -> AimController.updateStaticAim   (aim straight at the goal, zone-aware, no lead)
+    private boolean sotmEnabled = true;
+
     /** Overridden by {@link CompetitionRed}; sets the alliance in onInit. */
     public void setupOpMode() {
         Configuration.ALLIANCE = Configuration.Alliance.BLUE;
@@ -142,15 +148,31 @@ public class CompetitionBlue extends NextFTCOpMode {
                 .build();
     }
 
-    /** Break the follower, hand back manual control, and disarm the gate run. */
-    private void cancelAutomation() {
+    /**
+     * Cancel path-following (gate run or park) and hand control back to the driver, but KEEP
+     * the close-shoot-zone auto-open ARMED so the gate still opens automatically on entry.
+     * Bound to gamepad-1 X.
+     */
+    private void cancelFollowingArmAutoOpen() {
         PedroComponent.follower().breakFollowing();
         PedroComponent.follower().startTeleopDrive();
-        if (gateOpened) Transfer.INSTANCE.closeGate().schedule();
-        gateArmed = false;
-        gateOpened = false;
         gateRun = GateRun.IDLE;
         automatedDrive = false;
+        gateArmed = true;   // keep auto-opening the gate when entering the close-shoot zone
+    }
+
+    /**
+     * Builds the gamepad-1 driver-control command. Base = Forza (right trigger − left trigger
+     * for forward/back). The non-Forza variants override this for normal stick driving.
+     */
+    protected DriverControlledCommand createDriverControlled() {
+        Range leftTrigger = Gamepads.gamepad1().leftTrigger();
+        return new PedroDriverControlled(
+                Gamepads.gamepad1().rightTrigger().map(rt -> rt - leftTrigger.get()),
+                Gamepads.gamepad1().leftStickX().negate(),
+                Gamepads.gamepad1().rightStickX().negate(),
+                !Configuration.FIELD_CENTRIC
+        );
     }
 
     @Override
@@ -172,14 +194,7 @@ public class CompetitionBlue extends NextFTCOpMode {
 
     @Override
     public void onStartButtonPressed() {
-        Range leftTrigger = Gamepads.gamepad1().leftTrigger();
-        driverControlled = new PedroDriverControlled(
-                Gamepads.gamepad1().rightTrigger().map(rt -> rt - leftTrigger.get()),
-                Gamepads.gamepad1().leftStickX().negate(),
-                Gamepads.gamepad1().rightStickX().negate(),
-                !Configuration.FIELD_CENTRIC
-        );
-
+        driverControlled = createDriverControlled();
         driverControlled.schedule();
         Transfer.INSTANCE.intake().schedule();
         Shooter.INSTANCE.on().schedule();
@@ -209,13 +224,9 @@ public class CompetitionBlue extends NextFTCOpMode {
                     Turret.INSTANCE.start().schedule();
                 });
 
-        // X → force BLUE alliance, B → force RED alliance
-        button(() -> gamepad1.x).whenTrue(() -> Configuration.ALLIANCE = Configuration.Alliance.BLUE);
-        button(() -> gamepad1.b).whenTrue(() -> Configuration.ALLIANCE = Configuration.Alliance.RED);
-
-        // D-Pad Up → ARM + start the auto gate run (only from idle). Arming enables the
-        //            close-shoot-zone auto-open on the way back.
-        button(() -> gamepad1.dpad_up).whenBecomesTrue(() -> {
+        // Y → ARM + start the auto gate run (the "gate debug" behavior): drive to the gate,
+        //     dwell, drive back, and auto-open the gate on ENTRY into the close-shoot zone.
+        button(() -> gamepad1.y).whenBecomesTrue(() -> {
             if (gateRun == GateRun.IDLE) {
                 PedroComponent.follower().followPath(buildToGate());
                 gateRun = GateRun.TO_GATE;
@@ -224,8 +235,17 @@ public class CompetitionBlue extends NextFTCOpMode {
             }
         });
 
-        // D-Pad Down → break the path + disarm (gate will NOT auto-open after this)
-        button(() -> gamepad1.dpad_down).whenBecomesTrue(this::cancelAutomation);
+        // X → cancel path-following (hand control back), but KEEP the close-shoot-zone
+        //     auto-open armed so the gate still opens automatically on entry.
+        button(() -> gamepad1.x).whenBecomesTrue(this::cancelFollowingArmAutoOpen);
+
+        // A → toggle shoot-on-the-move on/off (off = static aim, no predictive lead).
+        button(() -> gamepad1.a).whenBecomesTrue(() -> sotmEnabled = !sotmEnabled);
+
+        // Right Bumper → manual gate open while held, close when released (in addition to gp2).
+        button(() -> gamepad1.right_bumper)
+                .whenTrue(() -> Transfer.INSTANCE.openGate(1.0).schedule())
+                .whenBecomesFalse(() -> Transfer.INSTANCE.closeGate().schedule());
 
         // D-Pad Right → auto-drive to park
         button(() -> gamepad1.dpad_right).whenBecomesTrue(() -> {
@@ -340,8 +360,13 @@ public class CompetitionBlue extends NextFTCOpMode {
             X_VELOCITY = PedroComponent.follower().getVelocity().getXComponent();
             Y_VELOCITY = PedroComponent.follower().getVelocity().getYComponent();
 
-            // Shoot-on-the-move: virtual-target lead (direction + speed in one step; zero at rest).
-            AimController.updateShootOnMove(X_VELOCITY, Y_VELOCITY);
+            if (sotmEnabled) {
+                // Shoot-on-the-move: virtual-target lead (direction + speed in one step; zero at rest).
+                AimController.updateShootOnMove(X_VELOCITY, Y_VELOCITY);
+            } else {
+                // SOTM off: aim straight at the goal (zone-aware, no predictive lead).
+                AimController.updateStaticAim();
+            }
 
             double base;
             if (Configuration.CURRENT_POSE.getY() < 36) {
@@ -366,6 +391,7 @@ public class CompetitionBlue extends NextFTCOpMode {
         }
 
         telemetry.addData("Alliance", Configuration.ALLIANCE);
+        telemetry.addData("SOTM (A toggles)", sotmEnabled ? "ON" : "OFF (static aim)");
         telemetry.addData("Gate run", gateRun);
         telemetry.addData("Gate armed / open", gateArmed + " / " + gateOpened);
         telemetry.addData("In close-shoot zone", inZone);

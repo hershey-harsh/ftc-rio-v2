@@ -78,7 +78,7 @@ public class Configuration {
     // Far-shoot-zone turret offset for RED (negative = RIGHT/CW per the convention: +angle =
     // CCW/left, confirmed by the rotation-lead sign). BLUE uses the NEGATIVE of this, so RED
     // aims right and BLUE aims left. Flip a sign if a side goes the wrong way.
-    public static double FAR_SHOOT_TURRET_OFFSET = -2.0;
+    public static double FAR_SHOOT_TURRET_OFFSET = -2;
     // Offset-zone turret offset magnitude (positive = LEFT/CCW). RED applies the NEGATIVE
     // (right) and BLUE the positive (left) — flipped because RED was over-aiming left.
     public static double OFFSET_ZONE_TURRET_OFFSET = 3.0;
